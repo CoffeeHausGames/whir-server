@@ -15,6 +15,7 @@ import (
 		"github.com/CoffeeHausGames/whir-server/app/model"
 		requests "github.com/CoffeeHausGames/whir-server/app/model/requests"
 
+		"go.mongodb.org/mongo-driver/mongo"
     "go.mongodb.org/mongo-driver/bson"
     "go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -190,14 +191,15 @@ func (env *HandlerEnv) GetBusiness(w http.ResponseWriter, r *http.Request, _ htt
 			WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
 			return
 	}
-	fmt.Println(*locationData.Zip_code)
-	var businessCollection model.Collection = env.database.GetBusinesses()
-	err = businessCollection.FindOne(currBusiness, ctx, bson.M{"zip_code": *locationData.Zip_code})
 
-	businessWrapper := model.NewBusinessUser(currBusiness)
+	var businessCollection model.Collection = env.database.GetBusinesses()
+	cursor, err := businessCollection.Find(currBusiness, ctx, bson.M{"zip_code": *locationData.Zip_code})
+	businesses := GetMultipleBusinesses(cursor)
+
+	// businessWrapper := model.NewBusinessUser(currBusiness)
 
 	// Return a success response to the client
-	WriteSuccessResponse(w, businessWrapper)
+	WriteSuccessResponse(w, businesses)
 }
 
 
@@ -281,3 +283,23 @@ func (env *HandlerEnv) GetBusiness(w http.ResponseWriter, r *http.Request, _ htt
 // 	// Return a success response to the client
 // 	WriteSuccessResponse(w, currBase)
 // }
+
+
+
+func GetMultipleBusinesses(cursor *mongo.Cursor) []model.BusinessUserWrapper{
+
+	var businesses []model.BusinessUserWrapper
+	// Iterate through the cursor and decode each document into a Businesses struct.
+	for cursor.Next(context.Background()) {
+		var business model.BusinessUserWrapper
+
+		// Decode the current document into the Businesses struct.
+		if err := cursor.Decode(&business); err != nil {
+				log.Fatal(err)
+		}
+
+		// Append the decoded struct to the slice.
+		businesses = append(businesses, business)
+}
+return businesses
+}

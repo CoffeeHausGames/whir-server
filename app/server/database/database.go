@@ -80,8 +80,9 @@ func (d *Database) GetUsers() model.Collection{
 	return GetMongoCollection(d.client.Database(d.databaseName).Collection("users"))
 }
 
+//	GetBusinesses gets the user collection from the mongo database with name c
+//	returns the users collection
 func (d *Database) GetBusinesses() model.Collection{
 	log.Println("Retrieving Users collection")
 	return GetMongoCollection(d.client.Database(d.databaseName).Collection("businesses"))
 }
-

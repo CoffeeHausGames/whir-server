@@ -41,6 +41,12 @@ func (c MongoCollection) FindOne(doc interface{}, ctx context.Context, filter in
 	return err
 }
 
+// Makes a call to mongodb to find documents
+func (c MongoCollection) Find(doc interface{}, ctx context.Context, filter interface{},opts ...*options.FindOneOptions) (*mongo.Cursor, error){
+	cursor, err := c.Collection.Find(ctx, filter)
+	return cursor, err
+}
+
 // GetMongoCollection returns a mongo collection with the [name]
 // Wraps a Mongo Collection with our implementation of it
 func GetMongoCollection(mC *mongo.Collection) MongoCollection {
