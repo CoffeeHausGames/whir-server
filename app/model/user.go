@@ -26,7 +26,6 @@ type ClientUser struct {
 	Last_name     *string            `json:"last_name,omitempty"`
 	Token         *string            `json:"token,omitempty"`
     Refresh_token *string            `json:"refresh_token,omitempty"`
-    Base          *Base              `json:"Base,omitempty"`
 }
 
 // newUser sets up a client appropriate [model.User]
