@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 	
-	"github.com/lucas-kern/tower-of-babel_server/app/model"
+	"github.com/CoffeeHausGames/whir-server/app/model"
 
 	// "github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -80,9 +80,8 @@ func (d *Database) GetUsers() model.Collection{
 	return GetMongoCollection(d.client.Database(d.databaseName).Collection("users"))
 }
 
-//	GetBases gets the base collection from the mongo database with name c
-//	returns the bases collection
-func (d *Database) GetBases() model.Collection{
-	log.Println("Retrieving Bases collection")
-	return GetMongoCollection(d.client.Database(d.databaseName).Collection("bases"))
+func (d *Database) GetBusinesses() model.Collection{
+	log.Println("Retrieving Users collection")
+	return GetMongoCollection(d.client.Database(d.databaseName).Collection("businesses"))
 }
+

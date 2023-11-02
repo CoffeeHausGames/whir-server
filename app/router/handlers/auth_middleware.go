@@ -6,8 +6,8 @@ import (
     "net/http"
 
 		"github.com/julienschmidt/httprouter"
-		"github.com/lucas-kern/tower-of-babel_server/app/auth"
-		"github.com/lucas-kern/tower-of-babel_server/app/model"
+		"github.com/CoffeeHausGames/whir-server/app/auth"
+		"github.com/CoffeeHausGames/whir-server/app/model"
 )
 
 // A middleware that will take a token from the header and ensure this user is valid

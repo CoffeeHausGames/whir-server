@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"github.com/lucas-kern/tower-of-babel_server/app/model"
+	"github.com/CoffeeHausGames/whir-server/app/model"
 )
 
 

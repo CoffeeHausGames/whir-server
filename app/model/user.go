@@ -20,8 +20,8 @@ type User struct {
     Updated_at    time.Time          `json:"updated_at"`
 }
 
-//ClientUser is the model that governs all account objects retrieved or inserted into the DB
-type ClientUser struct {
+//UserWrapper is the model that represents the user to be sent to the frontend
+type UserWrapper struct {
 	First_name    *string            `json:"first_name,omitempty"`
 	Last_name     *string            `json:"last_name,omitempty"`
 	Token         *string            `json:"token,omitempty"`
@@ -29,8 +29,8 @@ type ClientUser struct {
 }
 
 // newUser sets up a client appropriate [model.User]
-func NewUser(user *User) *ClientUser {
-	return &ClientUser{
+func NewUser(user *User) *UserWrapper {
+	return &UserWrapper{
 		First_name:      user.First_name,
 		Last_name:       user.Last_name,
 		Token:			 user.Token,

@@ -12,8 +12,8 @@ import (
 		"github.com/go-playground/validator/v10"
 		"github.com/julienschmidt/httprouter"
 
-    "github.com/lucas-kern/tower-of-babel_server/app/auth"
-    "github.com/lucas-kern/tower-of-babel_server/app/model"
+    "github.com/CoffeeHausGames/whir-server/app/auth"
+    "github.com/CoffeeHausGames/whir-server/app/model"
 
     "go.mongodb.org/mongo-driver/bson"
     "go.mongodb.org/mongo-driver/bson/primitive"
@@ -50,7 +50,6 @@ func VerifyPassword(userPassword string, providedPassword string) (bool, string)
 // TODO see what code is repeated with login and make external function for it
 func (env *HandlerEnv) SignUp(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var userCollection model.Collection = env.database.GetUsers()
-	var baseCollection model.Collection = env.database.GetBases()
 	var user model.User
 	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -107,15 +106,6 @@ func (env *HandlerEnv) SignUp(w http.ResponseWriter, r *http.Request, _ httprout
 	}
 	defer cancel()
 
-	base := model.NewBase(user.ID)
-	_, insertErr = baseCollection.InsertOne(ctx, base)
-	if insertErr != nil {
-			log.Println("Base item was not created")
-			WriteErrorResponse(w, 502, "There was an error connecting with the server")
-			return
-	}
-	defer cancel()
-
 	WriteSuccessResponse(w, "Account created successfully")
 }
 
@@ -123,7 +113,6 @@ func (env *HandlerEnv) SignUp(w http.ResponseWriter, r *http.Request, _ httprout
 //Login will allow a user to login to an account
 func (env *HandlerEnv) Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var userCollection model.Collection = env.database.GetUsers()
-	var baseCollection model.Collection = env.database.GetBases()
 	var user model.User
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
@@ -135,7 +124,6 @@ func (env *HandlerEnv) Login(w http.ResponseWriter, r *http.Request, _ httproute
 	fmt.Println("Decoded JSON data:", decodedData)
 
 	foundUser := new(model.User)
-	foundUserBase := new(model.Base)
 
 	err := json.Unmarshal([]byte(decodedData), &user)
 	if err != nil {
@@ -172,20 +160,11 @@ func (env *HandlerEnv) Login(w http.ResponseWriter, r *http.Request, _ httproute
 
 	auth.UpdateAllTokens(userCollection, token, refreshToken, foundUser.ID.Hex())
 
-	err = baseCollection.FindOne(foundUserBase, ctx, bson.M{"owner": foundUser.ID})
-	defer cancel()
-	if err != nil {
-			log.Println(err)
-			WriteErrorResponse(w, 502, "There was an error connecting with the server")
-			return
-	}
+	userWrapper := model.NewUser(foundUser)
+	userWrapper.Token = &token
+	userWrapper.Refresh_token = &refreshToken
 
-	clientUser := model.NewUser(foundUser)
-	clientUser.Token = &token
-	clientUser.Refresh_token = &refreshToken
-	clientUser.Base = foundUserBase
-
-	WriteSuccessResponse(w, clientUser)
+	WriteSuccessResponse(w, userWrapper)
 }
 
 func (env *HandlerEnv) TokenRefresh(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -207,7 +186,7 @@ func (env *HandlerEnv) TokenRefresh(w http.ResponseWriter, r *http.Request, ps h
 
 	auth.UpdateAllTokens(userCollection, token, refreshToken, claims.Uid)
 
-	var user model.ClientUser
+	var user model.UserWrapper
 	user.Refresh_token = &refreshToken
 	user.Token = &token
 
