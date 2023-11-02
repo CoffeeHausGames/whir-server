@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/lucas-kern/tower-of-babel_server/app/server/database"
-	"github.com/lucas-kern/tower-of-babel_server/app/model"
+	"github.com/CoffeeHausGames/whir-server/app/server/database"
+	"github.com/CoffeeHausGames/whir-server/app/model"
 )
 
 // HandlerEnv is a wrapper for the genral request handling and contains a database instance

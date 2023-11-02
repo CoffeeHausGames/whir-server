@@ -7,7 +7,7 @@ import (
     "os"
     "time"
 
-    "github.com/lucas-kern/tower-of-babel_server/app/model"
+    "github.com/CoffeeHausGames/whir-server/app/model"
 
     jwt "github.com/dgrijalva/jwt-go"
     "go.mongodb.org/mongo-driver/bson"
@@ -115,12 +115,13 @@ func UpdateAllTokens(userCollection model.Collection, signedToken string, signed
 	updateObj = append(updateObj, bson.E{"updated_at", Updated_at})
 
 	upsert := true
-	filter := bson.M{"user_id": userId}
+	Id, err := primitive.ObjectIDFromHex(userId)
+	filter := bson.M{"_id": Id}
 	opt := options.UpdateOptions{
 			Upsert: &upsert,
 	}
 
-	_, err := userCollection.UpdateOne(
+	_, err = userCollection.UpdateOne(
 			ctx,
 			filter,
 			bson.D{

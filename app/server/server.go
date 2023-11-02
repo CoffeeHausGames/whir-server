@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"github.com/lucas-kern/tower-of-babel_server/app/router"
-	"github.com/lucas-kern/tower-of-babel_server/app/server/database"
+	"github.com/CoffeeHausGames/whir-server/app/router"
+	"github.com/CoffeeHausGames/whir-server/app/server/database"
 )
 
 /**TODO:

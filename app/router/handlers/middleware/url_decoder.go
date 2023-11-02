@@ -10,7 +10,7 @@ import (
 )
 
 // URL decode the body of the request so there are no issues 
-func ParseFormData(n httprouter.Handle) httprouter.Handle {
+func UrlDecode(n httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 			// Check the content type
 			contentType := r.Header.Get("Content-Type")

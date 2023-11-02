@@ -1,4 +1,4 @@
-module github.com/lucas-kern/tower-of-babel_server
+module github.com/CoffeeHausGames/whir-server
 
 go 1.18
 
