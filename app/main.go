@@ -1,6 +1,8 @@
 package main
 
-import "github.com/CoffeeHausGames/whir-server/app/server"
+import (
+	"github.com/CoffeeHausGames/whir-server/app/server"
+)
 
 func main() {
 	s := &server.Server{

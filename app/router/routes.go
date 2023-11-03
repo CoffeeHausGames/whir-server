@@ -5,11 +5,11 @@ import (
 	"github.com/CoffeeHausGames/whir-server/app/server/database"
 	"github.com/CoffeeHausGames/whir-server/app/router/handlers/middleware"
 	"github.com/julienschmidt/httprouter"
+	"github.com/rs/cors"
+	"net/http"
 )
 
-// This registers all our routes and can wrap them in middle ware for auth and other items
-// Returns the router with paths and handlers
-func GetRouter(db *database.Database) *httprouter.Router{
+func GetRouter(db *database.Database) http.Handler {
 	EnvHandler := handlers.NewHandlerEnv(db)
 	router := httprouter.New()
 	router.POST("/users/signup", middleware.UrlDecode(EnvHandler.SignUp))
@@ -18,5 +18,12 @@ func GetRouter(db *database.Database) *httprouter.Router{
 	router.POST("/business/login", middleware.UrlDecode(EnvHandler.BusinessLogin))
 	router.GET("/token", middleware.UrlDecode(EnvHandler.TokenRefresh))
 	router.POST("/business", middleware.UrlDecode(EnvHandler.GetBusiness))
-	return router
+
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"http://localhost:3000"}, // your origin here
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
+		AllowedHeaders: []string{"Authorization", "Content-Type"},
+	})
+
+	return c.Handler(router)
 }
