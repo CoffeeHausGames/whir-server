@@ -28,6 +28,7 @@ type UserWrapper struct {
     Refresh_token *string            `json:"refresh_token,omitempty"`
 }
 
+
 // newUser sets up a client appropriate [model.User]
 func NewUser(user *User) *UserWrapper {
 	return &UserWrapper{

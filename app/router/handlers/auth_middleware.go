@@ -4,6 +4,7 @@ import (
     "context"
 		"log"
     "net/http"
+    "fmt"
 
 		"github.com/julienschmidt/httprouter"
 		"github.com/CoffeeHausGames/whir-server/app/auth"
@@ -16,6 +17,7 @@ func (env *HandlerEnv) Authentication(n httprouter.Handle) httprouter.Handle {
 	var userCollection model.Collection = env.database.GetUsers()
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
         clientToken := r.Header.Get("Authorization")
+        fmt.Println(clientToken)
         if clientToken == "" {
 						log.Printf("There is no authorization token")
 

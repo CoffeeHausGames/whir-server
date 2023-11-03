@@ -12,12 +12,18 @@ import (
 func GetRouter(db *database.Database) http.Handler {
 	EnvHandler := handlers.NewHandlerEnv(db)
 	router := httprouter.New()
+	router.GET("/users", EnvHandler.Authentication(EnvHandler.GetUser))
 	router.POST("/users/signup", middleware.UrlDecode(EnvHandler.SignUp))
 	router.POST("/business/signup", middleware.UrlDecode(EnvHandler.BusinessSignUp))
 	router.POST("/users/login", middleware.UrlDecode(EnvHandler.Login))
 	router.POST("/business/login", middleware.UrlDecode(EnvHandler.BusinessLogin))
 	router.GET("/token", middleware.UrlDecode(EnvHandler.TokenRefresh))
 	router.POST("/business", middleware.UrlDecode(EnvHandler.GetBusiness))
+
+	
+	
+
+
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"http://localhost:3000"}, // your origin here
