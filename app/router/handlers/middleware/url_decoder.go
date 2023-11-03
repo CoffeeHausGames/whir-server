@@ -48,5 +48,6 @@ func UrlDecode(n httprouter.Handle) httprouter.Handle {
 
 			// Call the next handler with the updated request
 			n(w, r, ps)
+			
 	}
 }
