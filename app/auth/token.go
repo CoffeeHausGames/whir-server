@@ -88,7 +88,9 @@ func ValidateToken(userCollection model.Collection, signedToken string) (claims 
 	}
 	
 	//Check that user from token matches the one in DB
-	err = userCollection.FindOne(foundUser, ctx, bson.M{"user_id": claims.Uid})
+	Id, err := primitive.ObjectIDFromHex(claims.Uid)
+	err = userCollection.FindOne(foundUser, ctx, bson.M{"_id": Id})
+	fmt.Println("retrieved user")
 	if err != nil {
 		msg = "error fetching user from the database"
 		return

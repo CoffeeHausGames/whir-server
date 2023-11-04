@@ -191,4 +191,33 @@ func (env *HandlerEnv) TokenRefresh(w http.ResponseWriter, r *http.Request, ps h
 	user.Token = &token
 
 	WriteSuccessResponse(w, user)
+}	
+
+func (env *HandlerEnv) GetUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	currUser := new(model.User)
+	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	claims := r.Context().Value("claims").(*auth.SignedDetails)
+
+	// Parse the request body to get building placement data
+	// Unmarshal the URL-decoded JSON data into the placementData struct
+
+	var userCollection model.Collection = env.database.GetUsers()
+	// Id, err := primitive.ObjectIDFromHex(claims.Uid)
+
+	Id, err := primitive.ObjectIDFromHex(claims.Uid)
+	err = userCollection.FindOne(currUser, ctx, bson.M{"_id": Id})
+
+	// businessWrapper := model.NewBusinessUser(currBusiness)
+	if err != nil {
+		WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+	user := model.NewUser(currUser)
+	// Return a success response to the client
+	WriteSuccessResponse(w, user)
 }
+
+
+
