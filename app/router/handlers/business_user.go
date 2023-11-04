@@ -24,28 +24,28 @@ import (
 // TODO see what code is repeated with login and make external function for it
 func (env *HandlerEnv) BusinessSignUp(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var businessCollection model.Collection = env.database.GetBusinesses()
-	var user model.BusinessUser
+	var userRequest requests.Business
 	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	// pull the URL-decoded body from the context (comes from url_decoder middleware)
 	decodedData := r.Context().Value("body").(string)
 
-	err := json.Unmarshal([]byte(decodedData), &user)
+	err := json.Unmarshal([]byte(decodedData), &userRequest)
 	if err != nil {
 		log.Println(err)
 		WriteErrorResponse(w, 422, "There was an error with the client request")
 		return 
 	}
 
-	err = validate.Struct(user)
+	err = validate.Struct(userRequest)
 	if err != nil {
 		log.Println(err)
 		WriteErrorResponse(w, 400, "There was an error with user validation")
 		return
 	}
 
-	count, err := businessCollection.CountDocuments(ctx, bson.M{"email": user.Email})
+	count, err := businessCollection.CountDocuments(ctx, bson.M{"email": userRequest.Email})
 	defer cancel()
 	if err != nil {
 			log.Println(err)
@@ -60,6 +60,7 @@ func (env *HandlerEnv) BusinessSignUp(w http.ResponseWriter, r *http.Request, _ 
 		WriteErrorResponse(w, 401, "There was an error registering this account")
 		return
 	}
+	user := requests.NewBusinessUser(userRequest)
 
 	password := HashPassword(*user.Password)
 	user.Password = &password
@@ -71,6 +72,10 @@ func (env *HandlerEnv) BusinessSignUp(w http.ResponseWriter, r *http.Request, _ 
 	token, refreshToken, _ := auth.GenerateAllTokens(*user.Email, *user.First_name, *user.Last_name, user.ID.Hex())
 	user.Token = &token
 	user.Refresh_token = &refreshToken
+	user.Location = &model.Location{
+		Type: "Point",
+		Coordinates: []float64{*userRequest.Longitude, *userRequest.Latitude},
+	}
 
 	_, insertErr := businessCollection.InsertOne(ctx, user)
 	if insertErr != nil {
@@ -168,12 +173,14 @@ func (env *HandlerEnv) BusinessTokenRefresh(w http.ResponseWriter, r *http.Reque
 }
 
 // Function to place a building in a base
+//TODO make it so a user can send in an address and find the long and lat from that address
 func (env *HandlerEnv) GetBusiness(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	currBusiness := new(model.BusinessUser)
+	radius := 20.0
 	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	body := r.Context().Value("body").(string)
+	//TODO if lat and long is null then check address to find it
 
 	// Parse the request body to get building placement data
 	// Unmarshal the URL-decoded JSON data into the placementData struct
@@ -192,8 +199,33 @@ func (env *HandlerEnv) GetBusiness(w http.ResponseWriter, r *http.Request, _ htt
 			return
 	}
 
+	if locationData.Radius != nil {
+		radius = *locationData.Radius
+	}
+
+	radiusMeters := radius * 1609.34
 	var businessCollection model.Collection = env.database.GetBusinesses()
-	cursor, err := businessCollection.Find(currBusiness, ctx, bson.M{"zip_code": *locationData.Zip_code})
+
+	// Create a query for geospatial location within the radius
+	query := bson.M{
+		"location": bson.M{
+				"$near": bson.M{
+						"$geometry": bson.M{
+								"type":        "Point",
+								"coordinates": []float64{*locationData.Longitude, *locationData.Latitude}, // The order is longitude (X), then latitude (Y).
+						},
+						"$maxDistance": radiusMeters, // Radius in meters.
+				},
+		},
+	}
+
+	// cursor, err := businessCollection.Find(currBusiness, ctx, bson.M{"zip_code": *locationData.Zip_code})
+	cursor, err := businessCollection.Find(ctx, query);
+	if err != nil {
+		WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
 	businesses := GetMultipleBusinesses(cursor)
 
 	// businessWrapper := model.NewBusinessUser(currBusiness)

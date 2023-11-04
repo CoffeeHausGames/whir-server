@@ -23,6 +23,6 @@ type Collection interface {
 	UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
 	InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (primitive.ObjectID, error)
 	FindOne(doc interface{}, ctx context.Context, filter interface{},opts ...*options.FindOneOptions) error
-	Find(doc interface{}, ctx context.Context, filter interface{},opts ...*options.FindOneOptions) (*mongo.Cursor, error)
+	Find(ctx context.Context, filter interface{},opts ...*options.FindOneOptions) (*mongo.Cursor, error)
 }
 

@@ -7,15 +7,17 @@ import (
 
 
 type Location struct {
-	ID          primitive.ObjectID `bson:"_id"`
-	Zip_code    *string						 `json:"zip_code" validate:"required,min=2,max=100"`
-} // TODO look into data structure probably best to use a date for these fields
+	ID        primitive.ObjectID `bson:"_id"`
+	Latitude  *float64           `json:"latitude" validate:"required,latitude"`
+	Longitude *float64           `json:"longitude" validate:"required,longitude"`
+	Radius    *float64           `json:"radius"`
+}
 
 // ValidateLocationStruct validates a Location struct
-func ValidateLocationStruct(bp *Location) error {
+func ValidateLocationStruct(loc *Location) error {
 	validate := validator.New()
 
-	if err := validate.Struct(bp); err != nil {
+	if err := validate.Struct(loc); err != nil {
 		return err
 	}
 

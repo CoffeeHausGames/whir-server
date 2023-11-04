@@ -1,13 +1,13 @@
-# tower-of-babel_server
+# whir_server
 
 ## Development
 
 ### Code Organization
-To start developing a `Go` project the `go mod init` command needs to be run with a domain of choice. This project is using `github.com/CoffeeHausGames/whir-server` as the GitHub repository so has been initialized with that domain.
+To start developing a `Go` project the `go mod init` command needs to be run with a domain of choice. This project is using `github.com/lucas-kern/whir_server` as the GitHub repository so has been initialized with that domain.
 
 In order to import a package into another package for use it will need to be in the format of
 
-`import github.com/CoffeeHausGames/whir-server/{PATH}/{TO}{FILE}`
+`import github.com/lucas-kern/whir_server/{PATH}/{TO}{FILE}`
 
 With the {PATH}/{TO}{FILE} being the directory structure of the imported package.
 
@@ -27,7 +27,10 @@ Stop the server by hitting `ctrl + c`
 
 ## Database
 
-We will be using MongoDB community Server for development.
+We will be using MongoDB community Server for development and mongodb cloud for group development.
+
+test_db URL: mongodb+srv://devtesting1:devtesting1@cluster0.j4x0atl.mongodb.net/?retryWrites=true&w=majority
+  * Need to create index on field:`location` of type: `2dsphere` in order to use GeoSpatial
 
 ### Mac Instructions
 
@@ -97,7 +100,7 @@ We will be using MongoDB community Server for development.
 
 1. run `go run scripts/seed-database`
 2. in mongo, run `show dbs`
-3. check for the 'tower-of-babel' instance
+3. check for the 'whir' instance
 
 ## Testing
 
