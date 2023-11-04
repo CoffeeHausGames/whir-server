@@ -206,7 +206,8 @@ func (env *HandlerEnv) GetUser(w http.ResponseWriter, r *http.Request, _ httprou
 	var userCollection model.Collection = env.database.GetUsers()
 	// Id, err := primitive.ObjectIDFromHex(claims.Uid)
 
-	err := userCollection.FindOne(currUser, ctx, bson.M{"ID": claims.Uid})
+	Id, err := primitive.ObjectIDFromHex(claims.Uid)
+	err = userCollection.FindOne(currUser, ctx, bson.M{"_id": Id})
 
 	// businessWrapper := model.NewBusinessUser(currBusiness)
 	if err != nil {
