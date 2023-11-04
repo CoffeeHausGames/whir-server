@@ -13,6 +13,7 @@ import (
 
     "github.com/CoffeeHausGames/whir-server/app/auth"
 		"github.com/CoffeeHausGames/whir-server/app/model"
+		"github.com/CoffeeHausGames/whir-server/app/helpers"
 		requests "github.com/CoffeeHausGames/whir-server/app/model/requests"
 
 		"go.mongodb.org/mongo-driver/mongo"
@@ -72,9 +73,24 @@ func (env *HandlerEnv) BusinessSignUp(w http.ResponseWriter, r *http.Request, _ 
 	token, refreshToken, _ := auth.GenerateAllTokens(*user.Email, *user.First_name, *user.Last_name, user.ID.Hex())
 	user.Token = &token
 	user.Refresh_token = &refreshToken
+	lon, lat := 0.0, 0.0
+	if (userRequest.Longitude == nil || userRequest.Latitude == nil) && userRequest.Address != nil {
+		address := model.GetStreetAddress(userRequest.Address)
+		lon, lat, err = helpers.RetrieveCoordinatesFromAddress(address)
+		fmt.Println(lon)
+		fmt.Println(lat)
+		if err != nil {
+			log.Println("Address was not successful")
+		}
+	} else {
+		lon = *userRequest.Longitude
+		lat = *userRequest.Latitude
+	}
+	fmt.Println(lon)
+	fmt.Println(lat)
 	user.Location = &model.Location{
 		Type: "Point",
-		Coordinates: []float64{*userRequest.Longitude, *userRequest.Latitude},
+		Coordinates: []float64{lon, lat},
 	}
 
 	_, insertErr := businessCollection.InsertOne(ctx, user)

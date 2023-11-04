@@ -15,8 +15,7 @@ type Business struct {
 	Token         *string            `json:"token"`
 	Refresh_token *string            `json:"refresh_token"`
 	Business_name *string            `json:"business_name"`
-	Address 			*string            `json:"address"`
-	Zip_code 			*string            `json:"zip_code"`
+	Address 			*model.Address     `json:"address"`
 	Latitude			*float64					 `json:"latitude"`
 	Longitude			*float64					 `json:"longitude"`
 	Deals 				[]*model.Deal	     `json:"deal"`	
@@ -42,7 +41,6 @@ func NewBusinessUser(b Business) *model.BusinessUser {
 		Token:			 		 b.Token,
 		Refresh_token:   b.Refresh_token,
 		Business_name:   b.Business_name,
-		Zip_code: 			 b.Zip_code,
 		Deals: 					 b.Deals,
 		Description:     b.Description,
 		Password:				 b.Password,

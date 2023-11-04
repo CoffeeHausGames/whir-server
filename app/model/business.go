@@ -6,6 +6,14 @@ import (
     "go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// Address represents a structured address with various fields.
+type Address struct {
+	Street     string `json:"street"`
+	City       string `json:"city"`
+	State      string `json:"state"`
+	PostalCode string `json:"postalCode"`
+	Country    string `json:"country"`
+}
 
 type Deal struct {
 	ID          primitive.ObjectID `bson:"_id"`
@@ -35,8 +43,7 @@ type BusinessUser struct {
     Created_at    time.Time          `json:"created_at"`
 		Updated_at    time.Time          `json:"updated_at"`
 		Business_name *string            `json:"business_name"`
-		Address 			*string            `json:"address"`
-		Zip_code 			*string            `json:"zip_code"`
+		Address 			*Address           `json:"address" bson:"address"`
 		Location			*Location					 `json:"location" bson:"location"`
 		Deals 				[]*Deal	    			 `json:"deal"`	
 		Description	  *string						 `json:"description"`	
@@ -49,7 +56,7 @@ type BusinessUserWrapper struct {
 	Token         *string            `json:"token,omitempty"`
 	Refresh_token *string            `json:"refresh_token,omitempty"`
 	Business_name *string            `json:"business_name"`
-	Address 			*string            `json:"address"`
+	Address 			*Address           `json:"address"`
 	Zip_code 			*string            `json:"zip_code"`
 	Location			*Location					 `json:"location" bson:"location"`
 	Deals 				[]*Deal	    			 `json:"deal"`	
@@ -64,9 +71,15 @@ func NewBusinessUser(business *BusinessUser) *BusinessUserWrapper {
 		Token:			 		 business.Token,
 		Refresh_token:   business.Refresh_token,
 		Business_name:   business.Business_name,
-		Zip_code: 			 business.Zip_code,
+		Address:			   business.Address,
 		Location:				 business.Location,
 		Deals: 					 business.Deals,
 		Description:     business.Description,
 	}
+}
+
+func GetStreetAddress(address *Address) string {
+	// Concatenate the fields into a single street address string
+	streetAddress := address.Street + ", " + address.City + ", " + address.State + " " + address.PostalCode + ", " + address.Country
+	return streetAddress
 }
