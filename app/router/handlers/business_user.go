@@ -351,24 +351,3 @@ func GetMultipleBusinesses(cursor *mongo.Cursor) []model.BusinessUserWrapper{
 }
 return businesses
 }
-
-func (env *HandlerEnv) SearchBusiness(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-    var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
-    defer cancel()
-
-    var businessCollection model.Collection = env.database.GetBusinesses()
-
-    // Create a query to retrieve all businesses
-    query := bson.M{}
-
-    cursor, err := businessCollection.Find(ctx, query)
-    if err != nil {
-        WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
-        return
-    }
-
-    businesses := GetMultipleBusinesses(cursor)
-
-    // Return a success response to the client
-    WriteSuccessResponse(w, businesses)
-}
