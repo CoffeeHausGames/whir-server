@@ -352,3 +352,39 @@ func GetMultipleBusinesses(cursor *mongo.Cursor) []model.BusinessUserWrapper{
 return businesses
 }
 
+
+// What do we think about this?
+// Function to get deals for the authenticated business user
+func (env *HandlerEnv) GetBusinessDeals(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	// Extract the authenticated user's ID from the context
+	claims := r.Context().Value("claims").(*auth.SignedDetails)
+	userID, err := primitive.ObjectIDFromHex(claims.Uid)
+	if err != nil {
+		WriteErrorResponse(w, http.StatusInternalServerError, "Error parsing user ID")
+		return
+	}
+
+	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// Assuming that the "business" collection contains the business users
+	var businessCollection model.Collection = env.database.GetBusinesses()
+
+	// Create a query to find the business user by ID
+	query := bson.M{"_id": userID}
+
+	// Perform the query to find the business user
+	foundUser := new(model.BusinessUser)
+	err = businessCollection.FindOne(foundUser, ctx, query)
+	if err != nil {
+		WriteErrorResponse(w, http.StatusNotFound, "Business user not found")
+		return
+	}
+
+	// Extract the deals from the found business user
+	deals := foundUser.Deals
+
+	// Return the deals as the response
+	WriteSuccessResponse(w, deals)
+}
+
