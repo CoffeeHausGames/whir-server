@@ -19,6 +19,7 @@ func GetRouter(db *database.Database) http.Handler {
 	router.POST("/business/login", middleware.UrlDecode(EnvHandler.BusinessLogin))
 	router.GET("/token", middleware.UrlDecode(EnvHandler.TokenRefresh))
 	router.POST("/business", middleware.UrlDecode(EnvHandler.GetBusiness))
+	router.POST("/business/deal", EnvHandler.BusinessAuthentication(middleware.UrlDecode(EnvHandler.AddDeal)))
 	// router.PUT("/api/business/deals", middleware.UrlDecode(EnvHandler.UpdateBusinessDeals))
 
 
