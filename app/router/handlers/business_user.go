@@ -74,7 +74,7 @@ func (env *HandlerEnv) BusinessSignUp(w http.ResponseWriter, r *http.Request, _ 
 	user.Token = &token
 	user.Refresh_token = &refreshToken
 	lon, lat := 0.0, 0.0
-	if (userRequest.Longitude == nil || userRequest.Latitude == nil) && userRequest.Address != nil {
+	if userRequest.Address != nil {
 		address := model.GetStreetAddress(userRequest.Address)
 		lon, lat, err = helpers.RetrieveCoordinatesFromAddress(address)
 		fmt.Println(lon)
@@ -82,7 +82,7 @@ func (env *HandlerEnv) BusinessSignUp(w http.ResponseWriter, r *http.Request, _ 
 		if err != nil {
 			log.Println("Address was not successful")
 		}
-	} else {
+	} else if (userRequest.Longitude != nil && userRequest.Latitude != nil) {
 		lon = *userRequest.Longitude
 		lat = *userRequest.Latitude
 	}
@@ -351,39 +351,4 @@ func GetMultipleBusinesses(cursor *mongo.Cursor) []model.BusinessUserWrapper{
 }
 return businesses
 }
-
-
-// Chat-GPTs attempt to make a Deal handler, help me :'(
-	
-// func (env *HandlerEnv) UpdateBusinessDeals(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-//     // Parse the request body to get the new deals data
-//     var updatedDeals []model.Deal  // Modify the model type as needed
-//     if err := json.NewDecoder(r.Body).Decode(&updatedDeals); err != nil {
-//         log.Println(err)
-//         WriteErrorResponse(w, http.StatusBadRequest, "Invalid JSON data")
-//         return
-//     }
-
-//     // Retrieve the business user's ID from the request context or token
-//     // You may need to include this information in the request headers or use authentication middleware.
-//     userID := "user_id_here"  // Replace with the actual way you obtain the user ID.
-
-//     // Update the business user's deals array with the new data
-//     var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
-//     defer cancel()
-
-//     var businessCollection model.Collection = env.database.GetBusinesses()
-
-//     filter := bson.M{"_id": userID} // Modify this filter according to your user ID format
-//     update := bson.M{"$set": bson.M{"deals": updatedDeals}}
-
-//     _, err := businessCollection.UpdateOne(ctx, filter, update)
-//     if err != nil {
-//         log.Println(err)
-//         WriteErrorResponse(w, http.StatusInternalServerError, "Failed to update user deals")
-//         return
-//     }
-
-//     WriteSuccessResponse(w, "Deals updated successfully")
-// }
 

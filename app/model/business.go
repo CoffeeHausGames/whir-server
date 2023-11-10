@@ -15,16 +15,6 @@ type Address struct {
 	Country    string `json:"country"`
 }
 
-type Deal struct {
-	ID          primitive.ObjectID `bson:"_id"`
-	Name        *string						 `json:"name"`
-	Start_time  *string						 `json:"start_time"`
-	End_time    *string            `json:"end_time"`
-	Day_of_week	*string						 `json:"day_of_week"`
-	Run_time		*string						 `json:"run_time"`
-	Description	*string						 `json:"description"`
-} // TODO look into data structure probably best to use a date for these fields
-
 type Location struct {
 	Type        	string    `json:"type" bson:"type"`
 	Coordinates []float64 	`json:"coordinates" bson:"coordinates"`

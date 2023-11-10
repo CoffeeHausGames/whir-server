@@ -40,3 +40,31 @@ func (env *HandlerEnv) Authentication(n httprouter.Handle) httprouter.Handle {
         n(w, r, ps)
     }
 }
+
+func (env *HandlerEnv) BusinessAuthentication(n httprouter.Handle) httprouter.Handle {
+	var userCollection model.Collection = env.database.GetBusinesses()
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+        clientToken := r.Header.Get("Authorization")
+        fmt.Println(clientToken)
+        if clientToken == "" {
+						log.Printf("There is no authorization token")
+
+            return
+				}
+
+        claims, err := auth.ValidateToken(userCollection, clientToken)
+        if err != "" {
+						log.Panic(err)
+            return
+				}
+				
+        // Store the claims in the request context
+        ctx := context.WithValue(r.Context(), "claims", claims)
+
+        // Create a new request with the updated context
+        r = r.WithContext(ctx)
+
+        // Call the next handler with the updated request
+        n(w, r, ps)
+    }
+}
