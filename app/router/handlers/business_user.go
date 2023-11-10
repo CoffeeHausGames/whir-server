@@ -355,6 +355,7 @@ return businesses
 
 // What do we think about this?
 // Function to get deals for the authenticated business user
+// Function to get deals for the authenticated business user
 func (env *HandlerEnv) GetBusinessDeals(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	// Extract the authenticated user's ID from the context
 	claims := r.Context().Value("claims").(*auth.SignedDetails)
@@ -384,7 +385,14 @@ func (env *HandlerEnv) GetBusinessDeals(w http.ResponseWriter, r *http.Request, 
 	// Extract the deals from the found business user
 	deals := foundUser.Deals
 
-	// Return the deals as the response
-	WriteSuccessResponse(w, deals)
+	// Set the Content-Type header to application/json
+	w.Header().Set("Content-Type", "application/json")
+
+	// Encode the deals as JSON and send it in the response
+	if err := json.NewEncoder(w).Encode(deals); err != nil {
+		WriteErrorResponse(w, http.StatusInternalServerError, "Error encoding JSON response")
+		return
+	}
 }
+
 
