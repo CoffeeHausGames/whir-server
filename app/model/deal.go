@@ -7,7 +7,8 @@ import (
 )
 
 type Deal struct {
-	ID          primitive.ObjectID `json:"id" bson:"_id"`
+	ID          primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Business_id primitive.ObjectID `json:"business_id" bson:"business_id"`
 	Name        *string            `json:"name"`
 	Start_time  *time.Time         `json:"start_time" bson:"start_time,omitempty"`
 	End_time    *time.Time         `json:"end_time" bson:"end_time,omitempty"`
@@ -15,4 +16,4 @@ type Deal struct {
 	Start_date  *time.Time         `json:"start_date" bson:"start_date,omitempty"`
 	End_date  *time.Time         	 `json:"end_date" bson:"end_date,omitempty"`
 	Description *string            `json:"description" bson:"description,omitempty"`
-}
+} 

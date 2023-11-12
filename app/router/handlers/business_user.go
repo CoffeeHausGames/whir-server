@@ -155,7 +155,7 @@ func (env *HandlerEnv) BusinessLogin(w http.ResponseWriter, r *http.Request, _ h
 
 	auth.UpdateAllTokens(businessCollection, token, refreshToken, foundUser.ID.Hex())
 
-	userWrapper := model.NewBusinessUser(foundUser)
+	userWrapper := model.NewBusinessUser(foundUser, nil)
 	userWrapper.Token = &token
 	userWrapper.Refresh_token = &refreshToken
 
@@ -250,90 +250,7 @@ func (env *HandlerEnv) GetBusiness(w http.ResponseWriter, r *http.Request, _ htt
 	WriteSuccessResponse(w, businesses)
 }
 
-
-// // Function to place a building in a base
-// func (env *HandlerEnv) GetBusiness(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-// 	currBusiness := new(model.BusinessUser)
-// 	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
-// 	defer cancel()
-
-// 	// How to access the "claims" object so the user properties from the auth token
-// 	claims := r.Context().Value("claims").(*auth.SignedDetails)
-// 	body := r.Context().Value("body").(string)
-
-// 	// Parse the request body to get building placement data
-// 	// Unmarshal the URL-decoded JSON data into the placementData struct
-// 	var locationData requests.Location
-// 	err := json.Unmarshal([]byte(body), &locationData)
-// 	if err != nil {
-// 			// Handle JSON decoding error
-// 			WriteErrorResponse(w, http.StatusBadRequest, err.Error())
-// 			return
-// 	}
-	
-// 	err = requests.ValidateLocationStruct(&locationData)
-// 	if err != nil {
-// 			// Handle JSON decoding error
-// 			WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
-// 			return
-// 	}
-
-// 	var businessCollection model.Collection = env.database.GetUsers()
-// 	err = businessCollection.FindOne(currBusiness, ctx, bson.M{"zip_code": locationData.Zip_code})
-
-// 	err = baseCollection.FindOne(currBase, ctx, bson.M{"owner": objectID})
-// 	building := model.NewBuilding(&placementData)
-
-// 	// Perform validation checks (e.g., user permissions, available resources)
-
-// 	// Need to persist the base after the building is placed
-// 	if err := currBase.AddBuildingToBase(building); err != nil {
-// 			// Validation failed, return an error response
-// 			WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
-// 			return
-// 	}
-
-// 	// Define the filter to identify the base document by its ID (assuming it's a unique identifier).
-// 	filter := bson.M{"_id": currBase.ID}
-
-// 	// Define the update operation to set the "Grid" field in the base document.
-// 	update := bson.M{
-// 			"$set": bson.M{
-// 					"Grid": currBase.Grid,
-// 					"Buildings": currBase.Buildings,
-// 					// Add any other fields you need to update here
-// 			},
-// 	}
-
-// 	// Specify update options (optional). For example, you can enable upsert or specify additional options.
-// 	options := options.Update().SetUpsert(false)
-
-// 	// Perform the update operation on the "bases" collection.
-// 	result, err := baseCollection.UpdateOne(ctx, filter, update, options)
-// 	if err != nil {
-// 			// Handle the error if the update operation fails
-// 			WriteErrorResponse(w, http.StatusInternalServerError, "Failed to update base: "+err.Error())
-// 			return
-// 	}
-
-// 	if result.MatchedCount == 0 {
-// 			// Handle the case where no documents were matched by the filter
-// 			WriteErrorResponse(w, http.StatusNotFound, "No matching base found for the update")
-// 			return
-// 	}
-	
-// 	if result.ModifiedCount == 0 {
-// 			// Handle the case where the update didn't modify any documents
-// 			WriteErrorResponse(w, http.StatusNoContent, "No changes were made during the update")
-// 			return
-// 	}
-
-// 	// Return a success response to the client
-// 	WriteSuccessResponse(w, currBase)
-// }
-
-
-
+// Function to retrieve multiple businesses near a location
 func GetMultipleBusinesses(cursor *mongo.Cursor) []model.BusinessUserWrapper{
 
 	var businesses []model.BusinessUserWrapper
@@ -351,40 +268,3 @@ func GetMultipleBusinesses(cursor *mongo.Cursor) []model.BusinessUserWrapper{
 }
 return businesses
 }
-
-
-// What do we think about this?
-// Function to get deals for the authenticated business user
-func (env *HandlerEnv) GetBusinessDeals(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	// Extract the authenticated user's ID from the context
-	claims := r.Context().Value("claims").(*auth.SignedDetails)
-	userID, err := primitive.ObjectIDFromHex(claims.Uid)
-	if err != nil {
-		WriteErrorResponse(w, http.StatusInternalServerError, "Error parsing user ID")
-		return
-	}
-
-	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	// Assuming that the "business" collection contains the business users
-	var businessCollection model.Collection = env.database.GetBusinesses()
-
-	// Create a query to find the business user by ID
-	query := bson.M{"_id": userID}
-
-	// Perform the query to find the business user
-	foundUser := new(model.BusinessUser)
-	err = businessCollection.FindOne(foundUser, ctx, query)
-	if err != nil {
-		WriteErrorResponse(w, http.StatusNotFound, "Business user not found")
-		return
-	}
-
-	// Extract the deals from the found business user
-	deals := foundUser.Deals
-
-	// Return the deals as the response
-	WriteSuccessResponse(w, deals)
-}
-

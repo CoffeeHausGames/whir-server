@@ -18,7 +18,6 @@ type Business struct {
 	Address 			*model.Address     `json:"address"`
 	Latitude			*float64					 `json:"latitude"`
 	Longitude			*float64					 `json:"longitude"`
-	Deals 				[]*model.Deal	     `json:"deal"`	
 	Description	  *string						 `json:"description"`	
 }
 
@@ -41,7 +40,6 @@ func NewBusinessUser(b Business) *model.BusinessUser {
 		Token:			 		 b.Token,
 		Refresh_token:   b.Refresh_token,
 		Business_name:   b.Business_name,
-		Deals: 					 b.Deals,
 		Description:     b.Description,
 		Password:				 b.Password,
 		Email: 					 b.Email,
