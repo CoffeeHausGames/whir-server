@@ -83,13 +83,13 @@ func (d *Database) GetUsers() model.Collection{
 //	GetBusinesses gets the businesses collection from the mongo database
 //	returns the businesses collection
 func (d *Database) GetBusinesses() model.Collection{
-	log.Println("Retrieving Users collection")
+	log.Println("Retrieving Businesses collection")
 	return GetMongoCollection(d.client.Database(d.databaseName).Collection("businesses"))
 }
 
 //	GetDeals gets the deals collection from the mongo database
 //	returns the deals collection
 func (d *Database) GetDeals() model.Collection{
-	log.Println("Retrieving Users collection")
+	log.Println("Retrieving Deals collection")
 	return GetMongoCollection(d.client.Database(d.databaseName).Collection("deals"))
 }

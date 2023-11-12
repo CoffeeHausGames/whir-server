@@ -12,18 +12,23 @@ import (
 func GetRouter(db *database.Database) http.Handler {
 	EnvHandler := handlers.NewHandlerEnv(db)
 	router := httprouter.New()
+
+	// User routes
 	router.GET("/users", EnvHandler.Authentication(EnvHandler.GetUser))
 	router.POST("/users/signup", middleware.UrlDecode(EnvHandler.SignUp))
-	router.POST("/business/signup", middleware.UrlDecode(EnvHandler.BusinessSignUp))
 	router.POST("/users/login", middleware.UrlDecode(EnvHandler.Login))
+
+	// Business routes
 	router.POST("/business/login", middleware.UrlDecode(EnvHandler.BusinessLogin))
-	router.GET("/token", EnvHandler.TokenRefresh)
+	router.POST("/business/signup", middleware.UrlDecode(EnvHandler.BusinessSignUp))
 	router.POST("/business", middleware.UrlDecode(EnvHandler.GetBusiness))
 	router.POST("/business/deal", EnvHandler.BusinessAuthentication(middleware.UrlDecode(EnvHandler.AddDeal)))
 	router.GET("/business/deal", EnvHandler.BusinessAuthentication(EnvHandler.GetSignedInBusinessDeals))
 	router.PUT("/business/deal", EnvHandler.BusinessAuthentication(middleware.UrlDecode(EnvHandler.UpdateDeal)))
+	router.DELETE("/business/deal", EnvHandler.BusinessAuthentication(middleware.UrlDecode(EnvHandler.DeleteDeal)))
 
-	
+	// Token routes
+	router.GET("/token", EnvHandler.TokenRefresh)
 	
 
 

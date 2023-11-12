@@ -115,9 +115,6 @@ func (env *HandlerEnv) BusinessLogin(w http.ResponseWriter, r *http.Request, _ h
 	// pull the URL-decoded body from the context (comes from url_decoder middleware)
 	decodedData := r.Context().Value("body").(string)
 
-	// Now you have the decoded JSON data as a string
-	fmt.Println("Decoded JSON data:", decodedData)
-
 	foundUser := new(model.BusinessUser)
 
 	err := json.Unmarshal([]byte(decodedData), &user)

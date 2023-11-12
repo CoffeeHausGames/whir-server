@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"fmt"
 		"encoding/json"
     "context"
 		"log"
+		"fmt"
 
     "net/http"
 		"time"
@@ -22,31 +22,20 @@ import (
 
 
 // Function to add a deal for the authenticated business user
-//I need to edit the below method to use the new database methods and store the deals in its own collection with the business ID as a foreign key
-	
 func (env *HandlerEnv) AddDeal(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
-		claims := r.Context().Value("claims").(*auth.SignedDetails)
-		body := r.Context().Value("body").(string)
-
-
-    // Parse the request body to get building placement data
-    // Unmarshal the URL-decoded JSON data into the placementData struct
-    var dealData requests.Deal
-    err := json.Unmarshal([]byte(body), &dealData)
-    if err != nil {
-        // Handle JSON decoding error
-        WriteErrorResponse(w, http.StatusBadRequest, err.Error())
-        return
-    }
-		
-		err = requests.ValidateDealStruct(&dealData)
-    if err != nil {
-        // Handle JSON decoding error
-        WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
-        return
+		claims, body, err := env.getClaimsAndBody(r)
+		if err != nil {
+				WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+				return
+		}
+	
+		dealData, err := env.getDealDataFromBody(body)
+		if err != nil {
+				WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+				return
 		}
 		
 		// Convert the hexadecimal string to an ObjectID
@@ -104,19 +93,15 @@ func (env *HandlerEnv) UpdateDeal(w http.ResponseWriter, r *http.Request, _ http
 	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	claims := r.Context().Value("claims").(*auth.SignedDetails)
-	body := r.Context().Value("body").(string)
-
-	var dealData requests.Deal
-	err := json.Unmarshal([]byte(body), &dealData)
+	claims, body, err := env.getClaimsAndBody(r)
 	if err != nil {
-			WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+			WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
 			return
 	}
 
-	err = requests.ValidateDealStruct(&dealData)
+	dealData, err := env.getDealDataFromBody(body)
 	if err != nil {
-			WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
+			WriteErrorResponse(w, http.StatusBadRequest, err.Error())
 			return
 	}
 
@@ -145,45 +130,44 @@ func (env *HandlerEnv) UpdateDeal(w http.ResponseWriter, r *http.Request, _ http
 	WriteSuccessResponse(w, deal)
 }
 
-// // Function to update a deal for the authenticated business user
-// func (env *HandlerEnv) UpdateDeal(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-// 	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
-// 	defer cancel()
+// function to delete deals for the authenticated business user
+func (env *HandlerEnv) DeleteDeal(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-// 	claims := r.Context().Value("claims").(*auth.SignedDetails)
-// 	body := r.Context().Value("body").(string)
+	claims, body, err := env.getClaimsAndBody(r)
+	if err != nil {
+			WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+			return
+	}
 
-// 	// Need to retrieve the deal that is being updated from the body
-// 	var dealData requests.Deal
-// 	err := json.Unmarshal([]byte(body), &dealData)
-// 	if err != nil {
-// 			// Handle JSON decoding error
-// 			WriteErrorResponse(w, http.StatusBadRequest, err.Error())
-// 			return
-// 	}
+	dealData, err := env.getDealDataFromBody(body)
+	if err != nil {
+			WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+			return
+	}
 
-// 	err = requests.ValidateDealStruct(&dealData)
-// 	if err != nil {
-// 			// Handle JSON decoding error
-// 			WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
-// 			return
-// 	}
+	userID, err := primitive.ObjectIDFromHex(claims.Uid)
+	if err != nil {
+			WriteErrorResponse(w, http.StatusInternalServerError, "Error parsing user ID")
+			return
+	}
 
-// 	// Convert the hexadecimal string to an ObjectID
-// 	objectID, err := primitive.ObjectIDFromHex(claims.Uid)
-// 	if err != nil {
-// 			// Handle the error if the hex string is not a valid ObjectID
-// 			WriteErrorResponse(w, http.StatusNotFound, "Business user not found")
-// 	}
+	dealCollection := env.database.GetDeals()
+	deal := requests.NewDeal(dealData)
+	deal.Business_id = userID
 
-// 	// Assuming that the "business" collection contains the business users
-// 	var businessCollection model.Collection = env.database.GetBusinesses()
+	query := bson.M{"_id": deal.ID, "business_id": userID}
 
-// 	// Create a query to find the business user by ID
-// 	query := bson.M{"_id": objectID}
+	deleted, err := dealCollection.DeleteOne(ctx, query)
+	if err != nil {
+			WriteErrorResponse(w, http.StatusInternalServerError, "Failed to delete deal")
+			return
+	}
 
+	WriteSuccessResponse(w, deleted)
+}
 
-// }
 
 // Function to retrieve multiple businesses near a location
 func GetMultipleDeals(cursor *mongo.Cursor) []model.Deal{
@@ -202,4 +186,25 @@ func GetMultipleDeals(cursor *mongo.Cursor) []model.Deal{
 		deals = append(deals, deal)
 }
 return deals
+}
+
+func (env *HandlerEnv) getClaimsAndBody(r *http.Request) (*auth.SignedDetails, string, error) {
+	claims := r.Context().Value("claims").(*auth.SignedDetails)
+	body := r.Context().Value("body").(string)
+	return claims, body, nil
+}
+
+func (env *HandlerEnv) getDealDataFromBody(body string) (requests.Deal, error) {
+	var dealData requests.Deal
+	err := json.Unmarshal([]byte(body), &dealData)
+	if err != nil {
+			return dealData, err
+	}
+
+	err = requests.ValidateDealStruct(&dealData)
+	if err != nil {
+			return dealData, err
+	}
+
+	return dealData, nil
 }
