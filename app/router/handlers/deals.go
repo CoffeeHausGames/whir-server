@@ -128,6 +128,7 @@ func (env *HandlerEnv) UpdateDeal(w http.ResponseWriter, r *http.Request, _ http
 
 	dealCollection := env.database.GetDeals()
 	deal := requests.NewDeal(dealData)
+	deal.Business_id = userID
 
 	query := bson.M{"_id": deal.ID, "business_id": userID}
 
