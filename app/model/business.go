@@ -35,7 +35,6 @@ type BusinessUser struct {
 		Business_name *string            `json:"business_name"`
 		Address 			*Address           `json:"address" bson:"address"`
 		Location			*Location					 `json:"location" bson:"location"`
-		Deals 				[]*Deal	    			 `json:"deal"`	
 		Description	  *string						 `json:"description"`	
 }
 
@@ -54,7 +53,7 @@ type BusinessUserWrapper struct {
 }
 
 // newUser sets up a frontend appropriate [model.User]
-func NewBusinessUser(business *BusinessUser) *BusinessUserWrapper {
+func NewBusinessUser(business *BusinessUser, deals []*Deal) *BusinessUserWrapper {
 	return &BusinessUserWrapper{
 		First_name:      business.First_name,
 		Last_name:       business.Last_name,
@@ -63,7 +62,7 @@ func NewBusinessUser(business *BusinessUser) *BusinessUserWrapper {
 		Business_name:   business.Business_name,
 		Address:			   business.Address,
 		Location:				 business.Location,
-		Deals: 					 business.Deals,
+		Deals: 					 deals,
 		Description:     business.Description,
 	}
 }
