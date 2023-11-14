@@ -247,12 +247,12 @@ func (env *HandlerEnv) GetBusiness(w http.ResponseWriter, r *http.Request, _ htt
 	}
 
 	dealCollection := env.database.GetDeals()
-	businessUserWrappers := make([]model.BusinessUserWrapper, len(businesses))
+	businessUserWrappers := make([]model.BusinessUserWrapper, 0, len(businesses))
 	for _, business := range businesses {
-
 		deals, err := GetDealForBusiness(business.ID, dealCollection, context.Background())
 		if err != nil {
 			WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
+			continue
 		}
 		businessUserWrapper := model.NewBusinessUser(business, deals)
 
