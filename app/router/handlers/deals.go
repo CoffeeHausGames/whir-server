@@ -75,15 +75,11 @@ func (env *HandlerEnv) GetSignedInBusinessDeals(w http.ResponseWriter, r *http.R
 
 	dealCollection := env.database.GetDeals()
 
-	query := bson.M{"business_id": userID}
-
-	cursor, err := dealCollection.Find(ctx, query)
+	deals, err := GetDealForBusiness(userID, dealCollection, ctx)
 	if err != nil {
 			WriteErrorResponse(w, http.StatusInternalServerError, "Error finding deals")
 			return
 	}
-
-	deals := GetMultipleDeals(cursor)
 
 	WriteSuccessResponse(w, deals)
 }
@@ -168,6 +164,52 @@ func (env *HandlerEnv) DeleteDeal(w http.ResponseWriter, r *http.Request, _ http
 	WriteSuccessResponse(w, deleted)
 }
 
+func (env *HandlerEnv) DeleteMultipleDeals(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	claims, body, err := env.getClaimsAndBody(r)
+	if err != nil {
+		WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	var dealIds []string
+	err = json.Unmarshal([]byte(body), &dealIds)
+	if err != nil {
+		WriteErrorResponse(w, http.StatusUnprocessableEntity, "Error finding deals")
+	}
+
+	userID, err := primitive.ObjectIDFromHex(claims.Uid)
+	if err != nil {
+		WriteErrorResponse(w, http.StatusInternalServerError, "Error parsing user ID")
+		return
+	}
+
+	dealCollection := env.database.GetDeals()
+
+	// Convert dealIDsData to []primitive.ObjectID
+	var dealIDs []primitive.ObjectID
+	for _, id := range dealIds {
+		dealID, err := primitive.ObjectIDFromHex(id)
+		if err != nil {
+			WriteErrorResponse(w, http.StatusInternalServerError, "Error parsing deal ID")
+			return
+		}
+		dealIDs = append(dealIDs, dealID)
+	}
+
+	query := bson.M{"_id": bson.M{"$in": dealIDs}, "business_id": userID}
+
+	deleted, err := dealCollection.DeleteMany(ctx, query)
+	if err != nil {
+		WriteErrorResponse(w, http.StatusInternalServerError, "Failed to delete deals")
+		return
+	}
+
+	WriteSuccessResponse(w, deleted)
+}
+
 
 // Function to retrieve multiple businesses near a location
 func GetMultipleDeals(cursor *mongo.Cursor) []model.Deal{
@@ -184,7 +226,7 @@ func GetMultipleDeals(cursor *mongo.Cursor) []model.Deal{
 
 		// Append the decoded struct to the slice.
 		deals = append(deals, deal)
-}
+	}
 return deals
 }
 
@@ -207,4 +249,24 @@ func (env *HandlerEnv) getDealDataFromBody(body string) (requests.Deal, error) {
 	}
 
 	return dealData, nil
+}
+
+func GetDealForBusiness(businessId primitive.ObjectID, dealCollection model.Collection, ctx context.Context) ([]*model.Deal, error){
+
+	// Create a query to find deals with the current business ID
+	dealQuery := bson.M{"business_id": businessId}
+
+	// Execute the query
+	dealCursor, err := dealCollection.Find(ctx, dealQuery)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get deals: %v", err)
+	}
+
+	// Decode the deals
+	var deals []*model.Deal
+	if err := dealCursor.All(ctx, &deals); err != nil {
+			return nil, fmt.Errorf("Failed to decode deals: %v", err)
+	}
+
+	return deals, nil
 }

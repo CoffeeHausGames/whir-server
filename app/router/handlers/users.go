@@ -209,7 +209,7 @@ func (env *HandlerEnv) GetUser(w http.ResponseWriter, r *http.Request, _ httprou
 	Id, err := primitive.ObjectIDFromHex(claims.Uid)
 	err = userCollection.FindOne(currUser, ctx, bson.M{"_id": Id})
 
-	// businessWrapper := model.NewBusinessUser(currBusiness)
+	// businessWrapper := model.NewBusinessAuthenticatedUser(currBusiness)
 	if err != nil {
 		WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
 		return

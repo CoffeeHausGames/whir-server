@@ -53,12 +53,23 @@ type BusinessUserWrapper struct {
 }
 
 // newUser sets up a frontend appropriate [model.User]
-func NewBusinessUser(business *BusinessUser, deals []*Deal) *BusinessUserWrapper {
+func NewBusinessAuthenticatedUser(business *BusinessUser, deals []*Deal) *BusinessUserWrapper {
 	return &BusinessUserWrapper{
 		First_name:      business.First_name,
 		Last_name:       business.Last_name,
 		Token:			 		 business.Token,
 		Refresh_token:   business.Refresh_token,
+		Business_name:   business.Business_name,
+		Address:			   business.Address,
+		Location:				 business.Location,
+		Deals: 					 deals,
+		Description:     business.Description,
+	}
+}
+
+// newUser sets up a frontend appropriate [model.User]
+func NewBusinessUser(business *BusinessUser, deals []*Deal) *BusinessUserWrapper {
+	return &BusinessUserWrapper{
 		Business_name:   business.Business_name,
 		Address:			   business.Address,
 		Location:				 business.Location,

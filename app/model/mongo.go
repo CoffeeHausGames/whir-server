@@ -25,5 +25,6 @@ type Collection interface {
 	FindOne(doc interface{}, ctx context.Context, filter interface{},opts ...*options.FindOneOptions) error
 	Find(ctx context.Context, filter interface{},opts ...*options.FindOneOptions) (*mongo.Cursor, error)
 	DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
+	DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
 }
 
