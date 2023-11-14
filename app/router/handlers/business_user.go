@@ -5,6 +5,7 @@ import (
     "context"
     "fmt"
 		"log"
+		"errors"
 
     "net/http"
 		"time"
@@ -61,7 +62,7 @@ func (env *HandlerEnv) BusinessSignUp(w http.ResponseWriter, r *http.Request, _ 
 		WriteErrorResponse(w, 401, "There was an error registering this account")
 		return
 	}
-	user := requests.NewBusinessUser(userRequest)
+	user := requests.NewBusinessAuthenticatedUser(userRequest)
 
 	password := HashPassword(*user.Password)
 	user.Password = &password
@@ -152,7 +153,7 @@ func (env *HandlerEnv) BusinessLogin(w http.ResponseWriter, r *http.Request, _ h
 
 	auth.UpdateAllTokens(businessCollection, token, refreshToken, foundUser.ID.Hex())
 
-	userWrapper := model.NewBusinessUser(foundUser, nil)
+	userWrapper := model.NewBusinessAuthenticatedUser(foundUser, nil)
 	userWrapper.Token = &token
 	userWrapper.Refresh_token = &refreshToken
 
@@ -185,8 +186,7 @@ func (env *HandlerEnv) BusinessTokenRefresh(w http.ResponseWriter, r *http.Reque
 	WriteSuccessResponse(w, user)
 }
 
-// Function to place a building in a base
-//TODO make it so a user can send in an address and find the long and lat from that address
+// Function to rerieve all businesses with deals
 func (env *HandlerEnv) GetBusiness(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	radius := 20.0
 	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
@@ -235,33 +235,49 @@ func (env *HandlerEnv) GetBusiness(w http.ResponseWriter, r *http.Request, _ htt
 	// cursor, err := businessCollection.Find(currBusiness, ctx, bson.M{"zip_code": *locationData.Zip_code})
 	cursor, err := businessCollection.Find(ctx, query);
 	if err != nil {
-		WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
+		WriteErrorResponse(w, http.StatusUnprocessableEntity, "Error retrieving businesses")
 		return
 	}
 
-	businesses := GetMultipleBusinesses(cursor)
+	// Decode the businesses
+	var businesses []*model.BusinessUser
+	if err := cursor.All(ctx, &businesses); err != nil {
+		WriteErrorResponse(w, http.StatusUnprocessableEntity, "Error retrieving businesses")
+		return
+	}
 
-	// businessWrapper := model.NewBusinessUser(currBusiness)
+	dealCollection := env.database.GetDeals()
+	businessUserWrappers := make([]model.BusinessUserWrapper, len(businesses))
+	for _, business := range businesses {
+
+		deals, err := GetDealForBusiness(business.ID, dealCollection, context.Background())
+		if err != nil {
+			WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
+		}
+		businessUserWrapper := model.NewBusinessUser(business, deals)
+
+		businessUserWrappers = append(businessUserWrappers, *businessUserWrapper)
+	}
 
 	// Return a success response to the client
-	WriteSuccessResponse(w, businesses)
+	WriteSuccessResponse(w, businessUserWrappers)
 }
 
 // Function to retrieve multiple businesses near a location
-func GetMultipleBusinesses(cursor *mongo.Cursor) []model.BusinessUserWrapper{
+func GetMultipleBusinesses(cursor *mongo.Cursor) ([]model.BusinessUser, error){
 
-	var businesses []model.BusinessUserWrapper
+	var businesses []model.BusinessUser
 	// Iterate through the cursor and decode each document into a Businesses struct.
 	for cursor.Next(context.Background()) {
-		var business model.BusinessUserWrapper
+		var business model.BusinessUser
 
 		// Decode the current document into the Businesses struct.
 		if err := cursor.Decode(&business); err != nil {
-				log.Fatal(err)
+				return nil, errors.New("Error decoding business")
 		}
 
 		// Append the decoded struct to the slice.
 		businesses = append(businesses, business)
-}
-return businesses
+	}
+	return businesses, nil
 }

@@ -52,6 +52,11 @@ func (c MongoCollection) DeleteOne(ctx context.Context, filter interface{}, opts
 	return c.Collection.DeleteOne(ctx, filter, opts...)
 }
 
+// Makes a call to mongodb to delete many documents
+func (c MongoCollection) DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error){
+	return c.Collection.DeleteMany(ctx, filter, opts...)
+}
+
 // GetMongoCollection returns a mongo collection with the [name]
 // Wraps a Mongo Collection with our implementation of it
 func GetMongoCollection(mC *mongo.Collection) MongoCollection {

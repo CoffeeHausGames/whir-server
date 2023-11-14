@@ -26,7 +26,10 @@ func GetRouter(db *database.Database) http.Handler {
 	router.GET("/business/deal", EnvHandler.BusinessAuthentication(EnvHandler.GetSignedInBusinessDeals))
 	router.PUT("/business/deal", EnvHandler.BusinessAuthentication(middleware.UrlDecode(EnvHandler.UpdateDeal)))
 	router.DELETE("/business/deal", EnvHandler.BusinessAuthentication(middleware.UrlDecode(EnvHandler.DeleteDeal)))
+	router.DELETE("/business/deals", EnvHandler.BusinessAuthentication(middleware.UrlDecode(EnvHandler.DeleteMultipleDeals)))
+	// make route to delete multiple deals
 
+	
 	// Token routes
 	router.GET("/token", EnvHandler.TokenRefresh)
 	

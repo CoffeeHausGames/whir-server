@@ -32,7 +32,7 @@ func ValidateBuildingStruct(b *Business) error {
 	return nil
 }
 
-func NewBusinessUser(b Business) *model.BusinessUser {
+func NewBusinessAuthenticatedUser(b Business) *model.BusinessUser {
 	return &model.BusinessUser{
 		ID: b.ID,
 		First_name:      b.First_name,
