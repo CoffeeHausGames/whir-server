@@ -37,7 +37,7 @@ func GetRouter(db *database.Database) http.Handler {
 
 
 	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"http://localhost:3000"}, // your origin here
+		AllowedOrigins: []string{"http://localhost:3000", "http://localhost:8081", "http://192.168.1.29:4444"}, // your origin here
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
 		AllowedHeaders: []string{"Authorization", "Content-Type"},
 	})
