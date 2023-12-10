@@ -19,6 +19,7 @@ type Business struct {
 	Latitude			*float64					 `json:"latitude"`
 	Longitude			*float64					 `json:"longitude"`
 	Description	  *string						 `json:"description"`	
+	Cookie_consent *bool             `json:"cookie_consent"`
 }
 
 // ValidateLocationStruct validates a Location struct
@@ -32,7 +33,7 @@ func ValidateBuildingStruct(b *Business) error {
 	return nil
 }
 
-func NewBusinessAuthenticatedUser(b Business) *model.BusinessUser {
+func NewBusinessUser(b Business) *model.BusinessUser {
 	return &model.BusinessUser{
 		ID: b.ID,
 		First_name:      b.First_name,
@@ -44,5 +45,6 @@ func NewBusinessAuthenticatedUser(b Business) *model.BusinessUser {
 		Password:				 b.Password,
 		Email: 					 b.Email,
 		Address:				b.Address,
+		Cookie_consent:  b.Cookie_consent,
 	}
 }

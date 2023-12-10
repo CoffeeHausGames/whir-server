@@ -3,7 +3,6 @@ package handlers
 import (
 		"encoding/json"
     "context"
-    "fmt"
 		"log"
 		"errors"
 
@@ -62,24 +61,22 @@ func (env *HandlerEnv) BusinessSignUp(w http.ResponseWriter, r *http.Request, _ 
 		WriteErrorResponse(w, 401, "There was an error registering this account")
 		return
 	}
-	user := requests.NewBusinessAuthenticatedUser(userRequest)
+	user := requests.NewBusinessUser(userRequest)
 
-	password := HashPassword(*user.Password)
+	password := HashPassword(*user.GetPassword())
 	user.Password = &password
 
 	//TODO sanitize input before inserting into DB to avoid NoSQL injection
 	user.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 	user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 	user.ID = primitive.NewObjectID()
-	token, refreshToken, _ := auth.GenerateAllTokens(*user.Email, *user.First_name, *user.Last_name, user.ID.Hex())
-	user.Token = &token
-	user.Refresh_token = &refreshToken
+	token, refreshToken, _ := auth.GenerateAllTokens(*user.GetEmail(), *user.GetFirstName(), user.GetLastName(), user.GetID().Hex())
+	user.SetToken(token)
+	user.SetRefreshToken(refreshToken)
 	lon, lat := 0.0, 0.0
 	if userRequest.Address != nil {
 		address := model.GetStreetAddress(userRequest.Address)
 		lon, lat, err = helpers.RetrieveCoordinatesFromAddress(address)
-		fmt.Println(lon)
-		fmt.Println(lat)
 		if err != nil {
 			log.Println("Address was not successful")
 		}
@@ -87,8 +84,6 @@ func (env *HandlerEnv) BusinessSignUp(w http.ResponseWriter, r *http.Request, _ 
 		lon = *userRequest.Longitude
 		lat = *userRequest.Latitude
 	}
-	fmt.Println(lon)
-	fmt.Println(lat)
 	user.Location = &model.Location{
 		Type: "Point",
 		Coordinates: []float64{lon, lat},
@@ -102,7 +97,7 @@ func (env *HandlerEnv) BusinessSignUp(w http.ResponseWriter, r *http.Request, _ 
 	}
 	defer cancel()
 
-	WriteSuccessResponse(w, "Account created successfully")
+	WriteSuccessResponse(w, r, "Account created successfully", nil, false)
 }
 
 // TODO move all the DB stuff to the model so we don't need to repeat code to get Users? Not sure what the golang standard here is 
@@ -110,54 +105,25 @@ func (env *HandlerEnv) BusinessSignUp(w http.ResponseWriter, r *http.Request, _ 
 func (env *HandlerEnv) BusinessLogin(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var businessCollection model.Collection = env.database.GetBusinesses()
 	var user model.BusinessUser
-	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-	defer cancel()
-
-	// pull the URL-decoded body from the context (comes from url_decoder middleware)
-	decodedData := r.Context().Value("body").(string)
-
 	foundUser := new(model.BusinessUser)
 
-	err := json.Unmarshal([]byte(decodedData), &user)
+	foundUserInterface, err := performLogin(r.Context(), businessCollection, &user, foundUser)
 	if err != nil {
-		log.Println(err)
-		WriteErrorResponse(w, 422, "There was an error with the client request")
+		log.Println("performLogin failed")
+		WriteErrorResponse(w, 401, "There was an error logging in")
 		return
 	}
 
-	err = validate.Var(user.Email, "required,email")
-	if err != nil {
-		log.Println(err)
-		WriteErrorResponse(w, 400, "There was an error with user validation")
+	foundUser, ok := foundUserInterface.(*model.BusinessUser)
+	if !ok {
+		log.Println("Wrong user type found")
+		WriteErrorResponse(w, 401, "There was an error logging in")
 		return
 	}
-
-	//TODO sanitize input before Finding in DB to avoid NoSQL injection
-	err = businessCollection.FindOne(foundUser, ctx, bson.M{"email": user.Email})
-	defer cancel()
-	if err != nil {
-			log.Println(err)
-			WriteErrorResponse(w, 502, "There was an error connecting with the server")
-			return
-	}
-
-	passwordIsValid, msg := VerifyPassword(*user.Password, *foundUser.Password)
-	defer cancel()
-	if passwordIsValid != true {
-		log.Println(msg)
-		WriteErrorResponse(w, 401, "The username or password is incorrect")
-		return
-	}
-
-	token, refreshToken, _ := auth.GenerateAllTokens(*foundUser.Email, *foundUser.First_name, *foundUser.Last_name, foundUser.ID.Hex())
-
-	auth.UpdateAllTokens(businessCollection, token, refreshToken, foundUser.ID.Hex())
 
 	userWrapper := model.NewBusinessAuthenticatedUser(foundUser, nil)
-	userWrapper.Token = &token
-	userWrapper.Refresh_token = &refreshToken
 
-	WriteSuccessResponse(w, userWrapper)
+	WriteSuccessResponse(w, r, userWrapper, foundUser, true)
 }
 
 func (env *HandlerEnv) BusinessTokenRefresh(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -170,23 +136,28 @@ func (env *HandlerEnv) BusinessTokenRefresh(w http.ResponseWriter, r *http.Reque
 	}
 
 	claims, err := auth.ValidateToken(businessCollection, clientToken)
-	if err != "" {
+	if err != nil {
 			log.Panic(err)
 			return
 	}
 	
-	token, refreshToken, _ := auth.GenerateAllTokens(claims.Email, claims.First_name, claims.Last_name, claims.Uid)
+	token, refreshToken, _ := auth.GenerateAllTokens(claims.Email, claims.First_name, &claims.Last_name, claims.Uid)
 
 	auth.UpdateAllTokens(businessCollection, token, refreshToken, claims.Uid)
 
-	var user model.BusinessUserWrapper
+	var user model.BusinessUser
 	user.Refresh_token = &refreshToken
 	user.Token = &token
 
-	WriteSuccessResponse(w, user)
+	//Remove this when we only have user passing tokens from cookies and headers
+	newUser := model.NewBusinessAuthenticatedUser(&user, nil)
+	newUser.Refresh_token = &refreshToken
+	newUser.Token = &token
+
+	WriteSuccessResponse(w, r, newUser, &user, false)
 }
 
-// Function to rerieve all businesses with deals
+// Function to retrieve all businesses with deals
 func (env *HandlerEnv) GetBusiness(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	radius := 20.0
 	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
@@ -260,7 +231,7 @@ func (env *HandlerEnv) GetBusiness(w http.ResponseWriter, r *http.Request, _ htt
 	}
 
 	// Return a success response to the client
-	WriteSuccessResponse(w, businessUserWrappers)
+	WriteSuccessResponse(w, r, businessUserWrappers, nil, false)
 }
 
 // Function to retrieve multiple businesses near a location
