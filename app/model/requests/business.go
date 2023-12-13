@@ -12,8 +12,6 @@ type Business struct {
 	Last_name     *string            `json:"last_name" validate:"required,min=2,max=100"`
 	Password      *string            `json:"password" validate:"required,min=6"`
 	Email         *string            `json:"email" validate:"email,required"`
-	Token         *string            `json:"token"`
-	Refresh_token *string            `json:"refresh_token"`
 	Business_name *string            `json:"business_name"`
 	Address 			*model.Address     `json:"address"`
 	Latitude			*float64					 `json:"latitude"`
@@ -32,13 +30,11 @@ func ValidateBuildingStruct(b *Business) error {
 	return nil
 }
 
-func NewBusinessAuthenticatedUser(b Business) *model.BusinessUser {
+func NewBusinessUser(b Business) *model.BusinessUser {
 	return &model.BusinessUser{
 		ID: b.ID,
 		First_name:      b.First_name,
 		Last_name:       b.Last_name,
-		Token:			 		 b.Token,
-		Refresh_token:   b.Refresh_token,
 		Business_name:   b.Business_name,
 		Description:     b.Description,
 		Password:				 b.Password,

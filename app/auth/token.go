@@ -27,16 +27,20 @@ type SignedDetails struct {
 var SECRET_KEY string = os.Getenv("SECRET_KEY")
 
 // GenerateAllTokens generates both the detailed token and refresh token
-func GenerateAllTokens(email string, firstName string, lastName string, uid string) (signedToken string, signedRefreshToken string, err error) {
+func GenerateAllTokens(email string, firstName string, lastName *string, uid string) (signedToken string, signedRefreshToken string, err error) {
     claims := &SignedDetails{
         Email:      email,
         First_name: firstName,
-        Last_name:  lastName,
         Uid:        uid,
         StandardClaims: jwt.StandardClaims{
             ExpiresAt: time.Now().Local().Add(time.Hour * time.Duration(24)).Unix(),
         },
     }
+
+			// If lastName is provided, add it to the claims
+		if lastName != nil {
+			claims.Last_name = *lastName
+		}
 
     refreshClaims := &SignedDetails{
         StandardClaims: jwt.StandardClaims{
@@ -56,7 +60,7 @@ func GenerateAllTokens(email string, firstName string, lastName string, uid stri
 }
 
 //ValidateToken validates the jwt token
-func ValidateToken(userCollection model.Collection, signedToken string) (claims *SignedDetails, msg string) {
+func ValidateToken(userCollection model.Collection, signedToken string) (claims *SignedDetails, err error) {
 	foundUser := new(model.User)
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
@@ -70,20 +74,15 @@ func ValidateToken(userCollection model.Collection, signedToken string) (claims 
 	)
 
 	if err != nil {
-			msg = err.Error()
 			return
 	}
 
 	claims, ok := token.Claims.(*SignedDetails)
 	if !ok {
-			msg = fmt.Sprintf("the token is invalid")
-			msg = err.Error()
 			return
 	}
 
 	if claims.ExpiresAt < time.Now().Local().Unix() {
-			msg = fmt.Sprintf("token is expired")
-			msg = err.Error()
 			return
 	}
 	
@@ -91,16 +90,16 @@ func ValidateToken(userCollection model.Collection, signedToken string) (claims 
 	Id, err := primitive.ObjectIDFromHex(claims.Uid)
 	err = userCollection.FindOne(foundUser, ctx, bson.M{"_id": Id})
 	if err != nil {
-		msg = "error fetching user from the database"
+		err = fmt.Errorf("error fetching user from the database")
 		return
 	}
 
 	if foundUser == nil {
-		msg = "user not found in the database"
+		err = fmt.Errorf("user not found in the database")
 		return
 	}
 
-	return claims, msg
+	return claims, err
 }
 
 //UpdateAllTokens renews the user tokens when they login

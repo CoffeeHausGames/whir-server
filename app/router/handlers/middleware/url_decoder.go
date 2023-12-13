@@ -7,6 +7,7 @@ import (
 	"io"
 	"context"
 	"github.com/julienschmidt/httprouter"
+	"fmt"
 )
 
 // URL decode the body of the request so there are no issues 
@@ -14,7 +15,8 @@ func UrlDecode(n httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 			// Check the content type
 			contentType := r.Header.Get("Content-Type")
-			if contentType != "application/json" {
+			if contentType != "application/json" && contentType != "application/x-www-form-urlencoded"{
+					fmt.Println("Unsupported Content-Type")
 					http.Error(w, "Unsupported Content-Type", http.StatusBadRequest)
 					return
 			}

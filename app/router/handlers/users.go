@@ -94,7 +94,7 @@ func (env *HandlerEnv) SignUp(w http.ResponseWriter, r *http.Request, _ httprout
 	user.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 	user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 	user.ID = primitive.NewObjectID()
-	token, refreshToken, _ := auth.GenerateAllTokens(*user.Email, *user.First_name, *user.Last_name, user.ID.Hex())
+	token, refreshToken, _ := auth.GenerateAllTokens(*user.Email, *user.First_name, user.Last_name, user.ID.Hex())
 	user.Token = &token
 	user.Refresh_token = &refreshToken
 
@@ -106,65 +106,32 @@ func (env *HandlerEnv) SignUp(w http.ResponseWriter, r *http.Request, _ httprout
 	}
 	defer cancel()
 
-	WriteSuccessResponse(w, "Account created successfully")
+	WriteSuccessResponse(w, r, "Account created successfully", nil, false)
 }
 
-// TODO move all the DB stuff to the model so we don't need to repeat code to get Users? Not sure what the golang standard here is 
 //Login will allow a user to login to an account
-func (env *HandlerEnv) Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (env *HandlerEnv) UserLogin(w http.ResponseWriter, r *http.Request, _ httprouter.Params,) {
 	var userCollection model.Collection = env.database.GetUsers()
 	var user model.User
-	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-	defer cancel()
-
-	// pull the URL-decoded body from the context (comes from url_decoder middleware)
-	decodedData := r.Context().Value("body").(string)
-
-	// Now you have the decoded JSON data as a string
-	fmt.Println("Decoded JSON data:", decodedData)
-
 	foundUser := new(model.User)
 
-	err := json.Unmarshal([]byte(decodedData), &user)
+	foundUserInterface, err := performLogin(r.Context(), userCollection, &user, foundUser)
 	if err != nil {
-		log.Println(err)
-		WriteErrorResponse(w, 422, "There was an error with the client request")
+		log.Println("performLogin failed")
+		WriteErrorResponse(w, 401, "There was an error logging in")
 		return
 	}
 
-	err = validate.Var(user.Email, "required,email")
-	if err != nil {
-		log.Println(err)
-		WriteErrorResponse(w, 400, "There was an error with user validation")
+	foundUser, ok := foundUserInterface.(*model.User)
+	if !ok {
+		log.Println("Wrong user type found")
+		WriteErrorResponse(w, 401, "There was an error logging in")
 		return
 	}
-
-	//TODO sanitize input before Finding in DB to avoid NoSQL injection
-	err = userCollection.FindOne(foundUser, ctx, bson.M{"email": user.Email})
-	defer cancel()
-	if err != nil {
-			log.Println(err)
-			WriteErrorResponse(w, 502, "There was an error connecting with the server")
-			return
-	}
-
-	passwordIsValid, msg := VerifyPassword(*user.Password, *foundUser.Password)
-	defer cancel()
-	if passwordIsValid != true {
-		log.Println(msg)
-		WriteErrorResponse(w, 401, "The username or password is incorrect")
-		return
-	}
-
-	token, refreshToken, _ := auth.GenerateAllTokens(*foundUser.Email, *foundUser.First_name, *foundUser.Last_name, foundUser.ID.Hex())
-
-	auth.UpdateAllTokens(userCollection, token, refreshToken, foundUser.ID.Hex())
 
 	userWrapper := model.NewUser(foundUser)
-	userWrapper.Token = &token
-	userWrapper.Refresh_token = &refreshToken
 
-	WriteSuccessResponse(w, userWrapper)
+	WriteSuccessResponse(w, r, userWrapper, foundUser, true)
 }
 
 func (env *HandlerEnv) TokenRefresh(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -177,47 +144,65 @@ func (env *HandlerEnv) TokenRefresh(w http.ResponseWriter, r *http.Request, ps h
 	}
 
 	claims, err := auth.ValidateToken(userCollection, clientToken)
-	if err != "" {
+	if err != nil {
 			log.Panic(err)
 			return
 	}
 	
-	token, refreshToken, _ := auth.GenerateAllTokens(claims.Email, claims.First_name, claims.Last_name, claims.Uid)
+	token, refreshToken, _ := auth.GenerateAllTokens(claims.Email, claims.First_name, &claims.Last_name, claims.Uid)
 
 	auth.UpdateAllTokens(userCollection, token, refreshToken, claims.Uid)
 
-	var user model.UserWrapper
+	var user model.User
 	user.Refresh_token = &refreshToken
 	user.Token = &token
 
-	WriteSuccessResponse(w, user)
+	WriteSuccessResponse(w, r, nil, &user, true)
 }	
 
-func (env *HandlerEnv) GetUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (env *HandlerEnv) GetLoggedInUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	currUser := new(model.User)
 	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	claims := r.Context().Value("claims").(*auth.SignedDetails)
 
-	// Parse the request body to get building placement data
-	// Unmarshal the URL-decoded JSON data into the placementData struct
-
 	var userCollection model.Collection = env.database.GetUsers()
-	// Id, err := primitive.ObjectIDFromHex(claims.Uid)
 
 	Id, err := primitive.ObjectIDFromHex(claims.Uid)
 	err = userCollection.FindOne(currUser, ctx, bson.M{"_id": Id})
 
-	// businessWrapper := model.NewBusinessAuthenticatedUser(currBusiness)
 	if err != nil {
 		WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
 	user := model.NewUser(currUser)
+
 	// Return a success response to the client
-	WriteSuccessResponse(w, user)
+	WriteSuccessResponse(w, r, user, currUser, true)
 }
 
+func (env *HandlerEnv) Logout(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	// Clear the auth_token cookie
+	http.SetCookie(w, &http.Cookie{
+			Name:    "access_token",
+			Value:   "",
+			Path:    "/",
+			Secure:  true,
+			HttpOnly: true,
+			MaxAge:  -1, // MaxAge<0 means delete cookie now
+	})
 
+	// Clear the refresh_token cookie
+	http.SetCookie(w, &http.Cookie{
+			Name:    "refresh_token",
+			Value:   "",
+			Path:    "/",
+			Secure:  true,
+			HttpOnly: true,
+			MaxAge:  -1, // MaxAge<0 means delete cookie now
+	})
 
+   // Use WriteSuccessResponse to send the success message
+	 WriteSuccessResponse(w, r, "Logged out successfully", nil, false)
+}

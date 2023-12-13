@@ -57,9 +57,8 @@ func (env *HandlerEnv) AddDeal(w http.ResponseWriter, r *http.Request, _ httprou
     }
 		deal.ID = InsertedID
 
-    WriteSuccessResponse(w, deal)
+    WriteSuccessResponse(w, r, deal, nil, false)
 }
-// TODO remove deals from businessUser model stored in bson and have it retrieve all the deals and return them from deal collection
 
 // Function to get deals for the authenticated business user
 func (env *HandlerEnv) GetSignedInBusinessDeals(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -81,7 +80,7 @@ func (env *HandlerEnv) GetSignedInBusinessDeals(w http.ResponseWriter, r *http.R
 			return
 	}
 
-	WriteSuccessResponse(w, deals)
+	WriteSuccessResponse(w, r, deals, nil, false)
 }
 
 // function to update deals for the authenticated user
@@ -123,7 +122,7 @@ func (env *HandlerEnv) UpdateDeal(w http.ResponseWriter, r *http.Request, _ http
 			return
 	}
 
-	WriteSuccessResponse(w, deal)
+	WriteSuccessResponse(w, r, deal, nil, false)
 }
 
 // function to delete deals for the authenticated business user
@@ -161,7 +160,7 @@ func (env *HandlerEnv) DeleteDeal(w http.ResponseWriter, r *http.Request, _ http
 			return
 	}
 
-	WriteSuccessResponse(w, deleted)
+	WriteSuccessResponse(w, r, deleted, nil, false)
 }
 
 func (env *HandlerEnv) DeleteMultipleDeals(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -207,7 +206,7 @@ func (env *HandlerEnv) DeleteMultipleDeals(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	WriteSuccessResponse(w, deleted)
+	WriteSuccessResponse(w, r, deleted, nil, false)
 }
 
 
@@ -227,7 +226,7 @@ func GetMultipleDeals(cursor *mongo.Cursor) []model.Deal{
 		// Append the decoded struct to the slice.
 		deals = append(deals, deal)
 	}
-return deals
+	return deals
 }
 
 func (env *HandlerEnv) getClaimsAndBody(r *http.Request) (*auth.SignedDetails, string, error) {
