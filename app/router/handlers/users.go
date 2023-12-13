@@ -157,12 +157,7 @@ func (env *HandlerEnv) TokenRefresh(w http.ResponseWriter, r *http.Request, ps h
 	user.Refresh_token = &refreshToken
 	user.Token = &token
 
-	//Delete this when all endpoints are passing auth tokens through cookies or headers
-	var userWrapper model.UserWrapper
-	userWrapper.Refresh_token = &refreshToken
-	userWrapper.Token = &token
-
-	WriteSuccessResponse(w, r, userWrapper, &user, true)
+	WriteSuccessResponse(w, r, nil, &user, true)
 }	
 
 func (env *HandlerEnv) GetLoggedInUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -184,7 +179,6 @@ func (env *HandlerEnv) GetLoggedInUser(w http.ResponseWriter, r *http.Request, _
 	user := model.NewUser(currUser)
 
 	// Return a success response to the client
-	//TODO Switch to nil body when all requests are using cookies and headers
 	WriteSuccessResponse(w, r, user, currUser, true)
 }
 

@@ -12,14 +12,11 @@ type Business struct {
 	Last_name     *string            `json:"last_name" validate:"required,min=2,max=100"`
 	Password      *string            `json:"password" validate:"required,min=6"`
 	Email         *string            `json:"email" validate:"email,required"`
-	Token         *string            `json:"token"`
-	Refresh_token *string            `json:"refresh_token"`
 	Business_name *string            `json:"business_name"`
 	Address 			*model.Address     `json:"address"`
 	Latitude			*float64					 `json:"latitude"`
 	Longitude			*float64					 `json:"longitude"`
 	Description	  *string						 `json:"description"`	
-	Cookie_consent *bool             `json:"cookie_consent"`
 }
 
 // ValidateLocationStruct validates a Location struct
@@ -38,13 +35,10 @@ func NewBusinessUser(b Business) *model.BusinessUser {
 		ID: b.ID,
 		First_name:      b.First_name,
 		Last_name:       b.Last_name,
-		Token:			 		 b.Token,
-		Refresh_token:   b.Refresh_token,
 		Business_name:   b.Business_name,
 		Description:     b.Description,
 		Password:				 b.Password,
 		Email: 					 b.Email,
 		Address:				b.Address,
-		Cookie_consent:  b.Cookie_consent,
 	}
 }

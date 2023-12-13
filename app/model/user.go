@@ -16,8 +16,6 @@ type UserInterface interface {
     SetToken(token string)
     GetRefreshToken() *string
     SetRefreshToken(refreshToken string)
-    GetCookieConsent() *bool
-    SetCookieConsent(cookieConsent bool)
 }
 
 //User is the model that governs all account objects retrieved or inserted into the DB
@@ -32,16 +30,13 @@ type User struct {
     Refresh_token *string            `json:"refresh_token"`
     Created_at    time.Time          `json:"created_at"`
     Updated_at    time.Time          `json:"updated_at"`
-    Cookie_consent *bool             `json:"cookie_consent"`
 }
 
 //UserWrapper is the model that represents the user to be sent to the frontend
 type UserWrapper struct {
 	First_name    *string            `json:"first_name,omitempty"`
 	Last_name     *string            `json:"last_name,omitempty"`
-    // TODO remove these so they are only sent in the header or in cookies
-	Token         *string            `json:"token,omitempty"`
-    Refresh_token *string            `json:"refresh_token,omitempty"`
+    Email         *string            `json:"email"`
 }
 
 
@@ -50,8 +45,7 @@ func NewUser(user *User) *UserWrapper {
 	return &UserWrapper{
 		First_name:      user.First_name,
 		Last_name:       user.Last_name,
-		Token:			 user.Token,
-		Refresh_token:   user.Refresh_token,
+        Email:           user.Email,
 	}
 }
 
@@ -89,14 +83,4 @@ func (u *User) GetRefreshToken() *string {
 
 func (u *User) SetRefreshToken(refreshToken string) {
     u.Refresh_token = &refreshToken
-}
-
-// GetCookieConsent returns the user's cookie consent.
-func (u *User) GetCookieConsent() *bool {
-    return u.Cookie_consent
-}
-
-// SetCookieConsent sets the user's cookie consent.
-func (u *User) SetCookieConsent(cookieConsent bool) {
-    u.Cookie_consent = &cookieConsent
 }

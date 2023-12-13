@@ -86,7 +86,7 @@ func (env *HandlerEnv) GoogleAuthentication(w http.ResponseWriter, r *http.Reque
 			return
 	}
 
-	var userWrapper *model.UserWrapper
+	var token, refreshToken *string
 
 	if count > 0 {
 			foundUser := new(model.User)
@@ -106,8 +106,9 @@ func (env *HandlerEnv) GoogleAuthentication(w http.ResponseWriter, r *http.Reque
 					return
 			}
 	
-			// Convert the found user to a UserWrapper
-			userWrapper = model.NewUser(foundUser)
+			// Retrieve the tokens from the found user
+			token = foundUser.Token
+			refreshToken = foundUser.Refresh_token
 	} else {
 			firstName, ok := payload.Claims["given_name"].(string)
 			if !ok {
@@ -128,15 +129,12 @@ func (env *HandlerEnv) GoogleAuthentication(w http.ResponseWriter, r *http.Reque
 					http.Error(w, "Failed to create user", http.StatusInternalServerError)
 					return
 			}
-	
-			// Convert the new user to a UserWrapper
-			userWrapper = model.NewUser(&user)
 	}
 
 	// Create cookies for the access token, refresh token, and user ID
 	http.SetCookie(w, &http.Cookie{
 			Name:     "access_token",
-			Value:    *userWrapper.Token,
+			Value:    *token,
 			Path:     "/",
 			HttpOnly: true,
 			// Secure:   true, // Uncomment this line if you're using HTTPS
@@ -144,7 +142,7 @@ func (env *HandlerEnv) GoogleAuthentication(w http.ResponseWriter, r *http.Reque
 
 	http.SetCookie(w, &http.Cookie{
 			Name:     "refresh_token",
-			Value:    *userWrapper.Refresh_token,
+			Value:    *refreshToken,
 			Path:     "/",
 			HttpOnly: true,
 			// Secure:   true, // Uncomment this line if you're using HTTPS

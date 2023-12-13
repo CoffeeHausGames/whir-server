@@ -59,7 +59,6 @@ func (env *HandlerEnv) AddDeal(w http.ResponseWriter, r *http.Request, _ httprou
 
     WriteSuccessResponse(w, r, deal, nil, false)
 }
-// TODO remove deals from businessUser model stored in bson and have it retrieve all the deals and return them from deal collection
 
 // Function to get deals for the authenticated business user
 func (env *HandlerEnv) GetSignedInBusinessDeals(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

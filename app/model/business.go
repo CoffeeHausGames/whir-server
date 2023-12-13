@@ -35,15 +35,12 @@ type BusinessUser struct {
 		Address 			*Address           `json:"address" bson:"address"`
 		Location			*Location					 `json:"location" bson:"location"`
 		Description	  *string						 `json:"description"`	
-		Cookie_consent *bool             `json:"cookie_consent"`
 }
 
 //BusinessUserWrapper is the model that represents the user to be sent to the frontend
 type BusinessUserWrapper struct {
 	First_name    *string            `json:"first_name,omitempty"`
 	Last_name     *string            `json:"last_name,omitempty"`
-	Token         *string            `json:"token,omitempty"`
-	Refresh_token *string            `json:"refresh_token,omitempty"`
 	Business_name *string            `json:"business_name"`
 	Address 			*Address           `json:"address"`
 	Zip_code 			*string            `json:"zip_code"`
@@ -57,8 +54,6 @@ func NewBusinessAuthenticatedUser(business *BusinessUser, deals []*Deal) *Busine
 	return &BusinessUserWrapper{
 		First_name:      business.First_name,
 		Last_name:       business.Last_name,
-		Token:			 		 business.Token,
-		Refresh_token:   business.Refresh_token,
 		Business_name:   business.Business_name,
 		Address:			   business.Address,
 		Location:				 business.Location,
@@ -118,14 +113,4 @@ func (b *BusinessUser) GetRefreshToken() *string {
 
 func (b *BusinessUser) SetRefreshToken(refreshToken string) {
 	b.Refresh_token = &refreshToken
-}
-
-// GetCookieConsent returns the business user's cookie consent.
-func (b *BusinessUser) GetCookieConsent() *bool {
-	return b.Cookie_consent
-}
-
-// SetCookieConsent sets the business user's cookie consent.
-func (b *BusinessUser) SetCookieConsent(cookieConsent bool) {
-	b.Cookie_consent = &cookieConsent
 }

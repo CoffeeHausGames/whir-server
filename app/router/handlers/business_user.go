@@ -149,12 +149,7 @@ func (env *HandlerEnv) BusinessTokenRefresh(w http.ResponseWriter, r *http.Reque
 	user.Refresh_token = &refreshToken
 	user.Token = &token
 
-	//Remove this when we only have user passing tokens from cookies and headers
-	newUser := model.NewBusinessAuthenticatedUser(&user, nil)
-	newUser.Refresh_token = &refreshToken
-	newUser.Token = &token
-
-	WriteSuccessResponse(w, r, newUser, &user, false)
+	WriteSuccessResponse(w, r, nil, &user, false)
 }
 
 // Function to retrieve all businesses with deals
