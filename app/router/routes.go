@@ -40,6 +40,7 @@ func GetRouter(db *database.Database) http.Handler {
 			AllowedOrigins: []string{"http://localhost:3000", "http://localhost:8081", "http://192.168.1.29:4444", "http://10.8.1.245:4444"}, 
 			AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
 			AllowedHeaders: []string{"Authorization", "Content-Type", "Cookie-Consent"},
+			ExposedHeaders: []string{"X-Auth-Token", "X-Refresh-Token"},
 			AllowCredentials: true,
 	})
 
