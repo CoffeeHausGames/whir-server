@@ -247,3 +247,31 @@ func GetMultipleBusinesses(cursor *mongo.Cursor) ([]model.BusinessUser, error){
 	}
 	return businesses, nil
 }
+
+func (env *HandlerEnv) GetBusinessByID(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	business := new(model.BusinessUser)
+	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var businessCollection model.Collection = env.database.GetBusinesses()
+
+	Id, err := primitive.ObjectIDFromHex(ps.ByName("id"))
+	err = businessCollection.FindOne(business, ctx, bson.M{"_id": Id})
+
+	if err != nil {
+		WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	dealCollection := env.database.GetDeals()
+
+	deals, err := GetDealForBusiness(business.ID, dealCollection, context.Background())
+	if err != nil {
+		WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+	businessUserWrapper := model.NewBusinessUser(business, deals)
+
+	// Return a success response to the client
+	WriteSuccessResponse(w, r, businessUserWrapper, nil, false)
+}

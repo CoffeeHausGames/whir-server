@@ -29,6 +29,7 @@ func GetRouter(db *database.Database) http.Handler {
 	router.POST(version+"/business", middleware.UrlDecode(EnvHandler.GetBusiness))
 	router.POST(version+"/business/deal", EnvHandler.BusinessAuthentication(middleware.UrlDecode(EnvHandler.AddDeal)))
 	router.GET(version+"/business/deal", EnvHandler.BusinessAuthentication(EnvHandler.GetSignedInBusinessDeals))
+	router.GET(version+"/business/profile/:id", EnvHandler.GetBusinessByID)
 	router.PUT(version+"/business/deal", EnvHandler.BusinessAuthentication(middleware.UrlDecode(EnvHandler.UpdateDeal)))
 	router.DELETE(version+"/business/deal", EnvHandler.BusinessAuthentication(middleware.UrlDecode(EnvHandler.DeleteDeal)))
 	router.DELETE(version+"/business/deals", EnvHandler.BusinessAuthentication(middleware.UrlDecode(EnvHandler.DeleteMultipleDeals)))
