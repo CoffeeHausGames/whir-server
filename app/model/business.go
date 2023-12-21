@@ -39,6 +39,7 @@ type BusinessUser struct {
 
 //BusinessUserWrapper is the model that represents the user to be sent to the frontend
 type BusinessUserWrapper struct {
+	ID            primitive.ObjectID `bson:"_id"`
 	First_name    *string            `json:"first_name,omitempty"`
 	Last_name     *string            `json:"last_name,omitempty"`
 	Business_name *string            `json:"business_name"`
@@ -52,6 +53,7 @@ type BusinessUserWrapper struct {
 // newUser sets up a frontend appropriate [model.User]
 func NewBusinessAuthenticatedUser(business *BusinessUser, deals []*Deal) *BusinessUserWrapper {
 	return &BusinessUserWrapper{
+		ID: 						 business.ID,
 		First_name:      business.First_name,
 		Last_name:       business.Last_name,
 		Business_name:   business.Business_name,
@@ -65,6 +67,7 @@ func NewBusinessAuthenticatedUser(business *BusinessUser, deals []*Deal) *Busine
 // newUser sets up a frontend appropriate [model.User]
 func NewBusinessUser(business *BusinessUser, deals []*Deal) *BusinessUserWrapper {
 	return &BusinessUserWrapper{
+		ID: 						 business.ID,
 		Business_name:   business.Business_name,
 		Address:			   business.Address,
 		Location:				 business.Location,
