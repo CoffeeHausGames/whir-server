@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"reflect"
 		"encoding/json"
     "context"
 		"log"
 		"errors"
+		"strings"
 
     "net/http"
 		"time"
@@ -248,6 +250,7 @@ func GetMultipleBusinesses(cursor *mongo.Cursor) ([]model.BusinessUser, error){
 	return businesses, nil
 }
 
+// Used to get a business by a given ID does not require auth and will return a business with deals to the client
 func (env *HandlerEnv) GetBusinessByID(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	business := new(model.BusinessUser)
 	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
@@ -274,4 +277,88 @@ func (env *HandlerEnv) GetBusinessByID(w http.ResponseWriter, r *http.Request, p
 
 	// Return a success response to the client
 	WriteSuccessResponse(w, r, businessUserWrapper, nil, false)
+}
+
+// Updates the Business User Information
+// NOTE this will not update deals. Deals are updated in the deals.go file
+func (env *HandlerEnv) UpdateBusinessInfo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var businessCollection model.Collection = env.database.GetBusinesses()
+	var userRequest requests.BusinessUserUpdate
+	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	claims := r.Context().Value("claims").(*auth.SignedDetails)
+
+	Id, err := primitive.ObjectIDFromHex(claims.Uid)
+	if err != nil {
+			log.Println(err)
+			WriteErrorResponse(w, 422, "Invalid user ID")
+			return 
+	}
+
+	// pull the URL-decoded body from the context (comes from url_decoder middleware)
+	decodedData := r.Context().Value("body").(string)
+
+	err = json.Unmarshal([]byte(decodedData), &userRequest)
+	if err != nil {
+			log.Println(err)
+			WriteErrorResponse(w, 422, "There was an error with the client request")
+			return 
+	}
+
+	update := bson.M{}
+	val := reflect.ValueOf(userRequest)
+	typ := val.Type()
+
+	for i := 0; i < val.NumField(); i++ {
+			field := val.Field(i)
+			if field.IsValid() && !field.IsZero() {
+					jsonTag := typ.Field(i).Tag.Get("json")
+					tagName := strings.Split(jsonTag, ",")[0]
+					update[tagName] = field.Interface()
+			}
+	}
+
+	updateOperation := bson.M{
+			"$set": update,
+	}
+
+	_, err = businessCollection.UpdateOne(ctx, bson.M{"_id": Id}, updateOperation)
+	if err != nil {
+			log.Println(err)
+			WriteErrorResponse(w, 502, "There was an error updating the business info")
+			return
+	}
+
+	WriteSuccessResponse(w, r, "Business info updated successfully", nil, false)
+}
+
+func (env *HandlerEnv) GetLoggedInBusiness(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	currBusiness:= new(model.BusinessUser)
+	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	claims := r.Context().Value("claims").(*auth.SignedDetails)
+
+	var businessCollection model.Collection = env.database.GetBusinesses()
+
+	Id, err := primitive.ObjectIDFromHex(claims.Uid)
+	err = businessCollection.FindOne(currBusiness, ctx, bson.M{"_id": Id})
+
+	if err != nil {
+		WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	dealCollection := env.database.GetDeals()
+
+	deals, err := GetDealForBusiness(currBusiness.ID, dealCollection, context.Background())
+	if err != nil {
+		WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+	businessUserWrapper := model.NewBusinessUser(currBusiness, deals)
+
+	// Return a success response to the client
+	WriteSuccessResponse(w, r, businessUserWrapper, currBusiness, true)
 }

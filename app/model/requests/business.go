@@ -19,6 +19,17 @@ type Business struct {
 	Description	  *string						 `json:"description"`	
 }
 
+type BusinessUserUpdate struct {
+	First_name    *string  `json:"first_name"`
+	Last_name     *string  `json:"last_name"`
+	Password      *string  `json:"password"`
+	Email         *string  `json:"email"`
+	Business_name *string  `json:"business_name"`
+	Address       *model.Address `json:"address"`
+	Location      *model.Location `json:"location"`
+	Description   *string   `json:"description"`	
+}
+
 // ValidateLocationStruct validates a Location struct
 func ValidateBuildingStruct(b *Business) error {
 	validate := validator.New()
