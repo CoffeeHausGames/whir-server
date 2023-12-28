@@ -6,6 +6,7 @@ import (
     "context"
 		"log"
 		"errors"
+		"strings"
 
     "net/http"
 		"time"
@@ -282,16 +283,18 @@ func (env *HandlerEnv) GetBusinessByID(w http.ResponseWriter, r *http.Request, p
 // NOTE this will not update deals. Deals are updated in the deals.go file
 func (env *HandlerEnv) UpdateBusinessInfo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var businessCollection model.Collection = env.database.GetBusinesses()
-	var userRequest requests.Business
+	var userRequest requests.BusinessUserUpdate
 	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-
-	currBusiness:= new(requests.Business)
 
 	claims := r.Context().Value("claims").(*auth.SignedDetails)
 
 	Id, err := primitive.ObjectIDFromHex(claims.Uid)
-	err = businessCollection.FindOne(currBusiness, ctx, bson.M{"_id": Id})
+	if err != nil {
+			log.Println(err)
+			WriteErrorResponse(w, 422, "Invalid user ID")
+			return 
+	}
 
 	// pull the URL-decoded body from the context (comes from url_decoder middleware)
 	decodedData := r.Context().Value("body").(string)
@@ -302,28 +305,29 @@ func (env *HandlerEnv) UpdateBusinessInfo(w http.ResponseWriter, r *http.Request
 			WriteErrorResponse(w, 422, "There was an error with the client request")
 			return 
 	}
-	businessUser := requests.NewBusinessUser(userRequest)
-	
+
 	update := bson.M{}
-	val := reflect.ValueOf(businessUser)
+	val := reflect.ValueOf(userRequest)
 	typ := val.Type()
-	
+
 	for i := 0; i < val.NumField(); i++ {
 			field := val.Field(i)
-			if !field.IsNil() {
-					update[typ.Field(i).Name] = field.Interface()
+			if field.IsValid() && !field.IsZero() {
+					jsonTag := typ.Field(i).Tag.Get("json")
+					tagName := strings.Split(jsonTag, ",")[0]
+					update[tagName] = field.Interface()
 			}
 	}
-	
+
 	updateOperation := bson.M{
 			"$set": update,
 	}
 
 	_, err = businessCollection.UpdateOne(ctx, bson.M{"_id": Id}, updateOperation)
 	if err != nil {
-		log.Println(err)
-		WriteErrorResponse(w, 502, "There was an error updating the business info")
-		return
+			log.Println(err)
+			WriteErrorResponse(w, 502, "There was an error updating the business info")
+			return
 	}
 
 	WriteSuccessResponse(w, r, "Business info updated successfully", nil, false)
