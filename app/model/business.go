@@ -50,17 +50,6 @@ type BusinessUserWrapper struct {
 	Description	  *string						 `json:"description"`	
 }
 
-type BusinessUserUpdate struct {
-	First_name    *string  `json:"first_name"`
-	Last_name     *string  `json:"last_name"`
-	Password      *string  `json:"password"`
-	Email         *string  `json:"email"`
-	Business_name *string  `json:"business_name"`
-	Address       *Address `json:"address"`
-	Location      *Location `json:"location"`
-	Description   *string   `json:"description"`	
-}
-
 // newUser sets up a frontend appropriate [model.User]
 func NewBusinessAuthenticatedUser(business *BusinessUser, deals []*Deal) *BusinessUserWrapper {
 	return &BusinessUserWrapper{
