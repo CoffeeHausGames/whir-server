@@ -39,7 +39,7 @@ type BusinessUser struct {
 
 //BusinessUserWrapper is the model that represents the user to be sent to the frontend
 type BusinessUserWrapper struct {
-	ID            primitive.ObjectID `bson:"_id"`
+	ID            primitive.ObjectID `json:"_id"`
 	First_name    *string            `json:"first_name,omitempty"`
 	Last_name     *string            `json:"last_name,omitempty"`
 	Business_name *string            `json:"business_name"`
