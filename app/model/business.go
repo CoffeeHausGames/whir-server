@@ -46,7 +46,7 @@ type BusinessUserWrapper struct {
 	Address 			*Address           `json:"address"`
 	Zip_code 			*string            `json:"zip_code"`
 	Location			*Location					 `json:"location" bson:"location"`
-	Deals 				[]*Deal	    			 `json:"deal"`	
+	Deals 				[]*Deal	    			 `json:"deals"`	
 	Description	  *string						 `json:"description"`	
 }
 
