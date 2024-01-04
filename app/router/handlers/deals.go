@@ -44,7 +44,7 @@ func (env *HandlerEnv) AddDeal(w http.ResponseWriter, r *http.Request, _ httprou
 				// Handle the error if the hex string is not a valid ObjectID
 				panic(err)
 		}
-		fmt.Println(objectID)
+
 		dealData.Business_id = objectID
 		deal := requests.NewDeal(dealData)
 

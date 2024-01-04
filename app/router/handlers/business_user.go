@@ -7,6 +7,7 @@ import (
 		"log"
 		"errors"
 		"strings"
+		"fmt"
 
     "net/http"
 		"time"
@@ -361,4 +362,121 @@ func (env *HandlerEnv) GetLoggedInBusiness(w http.ResponseWriter, r *http.Reques
 
 	// Return a success response to the client
 	WriteSuccessResponse(w, r, businessUserWrapper, currBusiness, true)
+}
+
+// Function to pin deals for a business and verifies that it is that business' deal
+func (env *HandlerEnv) PinDeal(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	dealRequest := new(requests.Deal)
+	currBusiness := new(model.BusinessUser)
+	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	claims := r.Context().Value("claims").(*auth.SignedDetails)
+	decodedData := r.Context().Value("body").(string)
+
+	var businessCollection model.Collection = env.database.GetBusinesses()
+
+	Id, err := primitive.ObjectIDFromHex(claims.Uid)
+	err = businessCollection.FindOne(currBusiness, ctx, bson.M{"_id": Id})
+
+	if err != nil {
+		WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	currBusinessPinnedDeals := currBusiness.PinnedDeals
+	if currBusinessPinnedDeals == nil {
+		currBusinessPinnedDeals = make([]*primitive.ObjectID, 0)
+	}
+
+	err = json.Unmarshal([]byte(decodedData), &dealRequest)
+	if err != nil {
+			log.Println(err)
+			WriteErrorResponse(w, 422, "There was an error with the client request")
+			return 
+	}
+
+	var dealCollection model.Collection = env.database.GetDeals()
+
+	deal := new(model.Deal)
+	err = dealCollection.FindOne(deal, ctx, bson.M{"_id": dealRequest.ID})
+
+	if err != nil {
+		WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	if len(currBusinessPinnedDeals) >= 3 || 
+		helpers.Contains(currBusinessPinnedDeals, &deal.ID) || 
+		currBusiness.ID != deal.Business_id {
+		WriteErrorResponse(w, http.StatusUnprocessableEntity, "You cannot pin this deal")
+		return
+	}
+
+	currBusiness.PinDeal(&dealRequest.ID)
+
+	filter := bson.M{"_id": currBusiness.ID}
+	update := bson.M{"$set": bson.M{"pinnedDeals": currBusiness.PinnedDeals}}
+
+	_, err = businessCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	WriteSuccessResponse(w, r, "Deal pinned successfully", nil, false)
+}
+
+func (env *HandlerEnv) UnpinDeal(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	dealRequest := new(requests.Deal)
+	currBusiness := new(model.BusinessUser)
+	var ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	claims := r.Context().Value("claims").(*auth.SignedDetails)
+	decodedData := r.Context().Value("body").(string)
+
+	var businessCollection model.Collection = env.database.GetBusinesses()
+
+	Id, err := primitive.ObjectIDFromHex(claims.Uid)
+	err = businessCollection.FindOne(currBusiness, ctx, bson.M{"_id": Id})
+
+	if err != nil {
+			WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
+			return
+	}
+
+	err = json.Unmarshal([]byte(decodedData), &dealRequest)
+	if err != nil {
+			log.Println(err)
+			WriteErrorResponse(w, 422, "There was an error with the client request")
+			return 
+	}
+
+	fmt.Println("dealRequest.Business_id:", dealRequest.ID)
+	fmt.Println("currBusiness.PinnedDeals:", currBusiness.PinnedDeals)
+
+	if !helpers.Contains(currBusiness.PinnedDeals, &dealRequest.ID) {
+			WriteErrorResponse(w, http.StatusUnprocessableEntity, "Deal is not pinned")
+			return
+	}
+
+	err = currBusiness.UnpinDeal(&dealRequest.ID)
+	if err != nil {
+		WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	fmt.Println("currBusiness.PinnedDeals:", currBusiness.PinnedDeals)
+
+	filter := bson.M{"_id": currBusiness.ID}
+	update := bson.M{"$set": bson.M{"pinnedDeals": currBusiness.PinnedDeals}}
+
+	_, err = businessCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+			WriteErrorResponse(w, http.StatusUnprocessableEntity, err.Error())
+			return
+	}
+
+	WriteSuccessResponse(w, r, "Deal unpinned successfully", nil, false)
 }
