@@ -33,6 +33,8 @@ func GetRouter(db *database.Database) http.Handler {
 	router.GET(version+"/business/profile", EnvHandler.BusinessAuthentication(EnvHandler.GetLoggedInBusiness))
 	router.PUT(version+"/business/profile", EnvHandler.BusinessAuthentication(middleware.UrlDecode(EnvHandler.UpdateBusinessInfo)))
 	router.PUT(version+"/business/deal", EnvHandler.BusinessAuthentication(middleware.UrlDecode(EnvHandler.UpdateDeal)))
+	router.PUT(version+"/business/deal/pin", EnvHandler.BusinessAuthentication(middleware.UrlDecode(EnvHandler.PinDeal)))
+	router.PUT(version+"/business/deal/unpin", EnvHandler.BusinessAuthentication(middleware.UrlDecode(EnvHandler.UnpinDeal)))
 	router.DELETE(version+"/business/deal", EnvHandler.BusinessAuthentication(middleware.UrlDecode(EnvHandler.DeleteDeal)))
 	router.DELETE(version+"/business/deals", EnvHandler.BusinessAuthentication(middleware.UrlDecode(EnvHandler.DeleteMultipleDeals)))
 

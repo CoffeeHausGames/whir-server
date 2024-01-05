@@ -3,6 +3,8 @@ package model
 import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
+	"fmt"
+	"errors"
 )
 
 // Address represents a structured address with various fields.
@@ -22,32 +24,34 @@ type Location struct {
 //User is the model that governs all account objects retrieved or inserted into the DB
 //TODO add back the bson
 type BusinessUser struct {
-		ID            primitive.ObjectID `bson:"_id"`
-		First_name    *string            `json:"first_name" validate:"required,min=2,max=100"`
-		Last_name     *string            `json:"last_name" validate:"required,min=2,max=100"`
-		Password      *string            `json:"password" validate:"required,min=6"`
-		Email         *string            `json:"email" validate:"email,required"`
-		Token         *string            `json:"token"`
-		Refresh_token *string            `json:"refresh_token"`
-		Created_at    time.Time          `json:"created_at"`
-		Updated_at    time.Time          `json:"updated_at"`
-		Business_name *string            `json:"business_name"`
-		Address 			*Address           `json:"address" bson:"address"`
-		Location			*Location					 `json:"location" bson:"location"`
-		Description	  *string						 `json:"description"`	
+		ID            primitive.ObjectID 		`bson:"_id"`
+		First_name    *string            		`json:"first_name" validate:"required,min=2,max=100"`
+		Last_name     *string            		`json:"last_name" validate:"required,min=2,max=100"`
+		Password      *string            		`json:"password" validate:"required,min=6"`
+		Email         *string            		`json:"email" validate:"email,required"`
+		Token         *string            		`json:"token"`
+		Refresh_token *string            		`json:"refresh_token"`
+		Created_at    time.Time          		`json:"created_at"`
+		Updated_at    time.Time          		`json:"updated_at"`
+		Business_name *string            		`json:"business_name"`
+		Address 			*Address           		`json:"address" bson:"address"`
+		Location			*Location					 		`json:"location" bson:"location"`
+		Description	  *string						 		`json:"description"`	
+		PinnedDeals	 []*primitive.ObjectID	`json:"pinned_deals"`
 }
 
 //BusinessUserWrapper is the model that represents the user to be sent to the frontend
 type BusinessUserWrapper struct {
-	ID            primitive.ObjectID `json:"id"`
-	First_name    *string            `json:"first_name,omitempty"`
-	Last_name     *string            `json:"last_name,omitempty"`
-	Business_name *string            `json:"business_name"`
-	Address 			*Address           `json:"address"`
-	Zip_code 			*string            `json:"zip_code"`
-	Location			*Location					 `json:"location" bson:"location"`
-	Deals 				[]*Deal	    			 `json:"deals"`	
-	Description	  *string						 `json:"description"`	
+	ID            primitive.ObjectID 		`json:"id"`
+	First_name    *string            		`json:"first_name,omitempty"`
+	Last_name     *string            		`json:"last_name,omitempty"`
+	Business_name *string            		`json:"business_name"`
+	Address 			*Address           		`json:"address"`
+	Zip_code 			*string            		`json:"zip_code"`
+	Location			*Location					 		`json:"location" bson:"location"`
+	Deals 				[]*Deal	    			 		`json:"deals"`	
+	Description	  *string						 		`json:"description"`	
+	PinnedDeals	 []*primitive.ObjectID	`json:"pinned_deals"`
 }
 
 // newUser sets up a frontend appropriate [model.User]
@@ -61,6 +65,7 @@ func NewBusinessAuthenticatedUser(business *BusinessUser, deals []*Deal) *Busine
 		Location:				 business.Location,
 		Deals: 					 deals,
 		Description:     business.Description,
+		PinnedDeals:		 business.PinnedDeals,
 	}
 }
 
@@ -73,6 +78,7 @@ func NewBusinessUser(business *BusinessUser, deals []*Deal) *BusinessUserWrapper
 		Location:				 business.Location,
 		Deals: 					 deals,
 		Description:     business.Description,
+		PinnedDeals:		 business.PinnedDeals,
 	}
 }
 
@@ -116,4 +122,25 @@ func (b *BusinessUser) GetRefreshToken() *string {
 
 func (b *BusinessUser) SetRefreshToken(refreshToken string) {
 	b.Refresh_token = &refreshToken
+}
+
+func (business *BusinessUser) PinDeal(dealID *primitive.ObjectID) error {
+	maxPinnedDeals := 3
+	if len(business.PinnedDeals) >= maxPinnedDeals {
+		return fmt.Errorf("cannot pin more than %d deals", maxPinnedDeals)
+	}
+	business.PinnedDeals = append(business.PinnedDeals, dealID)
+	return nil
+}
+
+func (business *BusinessUser) UnpinDeal(dealID *primitive.ObjectID) error {
+	// Unpin the deal
+	for i, deal := range business.PinnedDeals {
+			if deal.Hex() == dealID.Hex() {
+					// Remove the deal from the slice
+					business.PinnedDeals = append(business.PinnedDeals[:i], business.PinnedDeals[i+1:]...)
+					return nil
+			}
+	}
+	return errors.New("deal not found in pinned deals")
 }
