@@ -109,3 +109,25 @@ test_db URL: mongodb+srv://devtesting1:devtesting1@cluster0.j4x0atl.mongodb.net/
   * ex) If you are testing `app/model/base` then the test directory should be `tests/model/base_test`
 1. To run the tests run `go test ./tests/*`
   * Could run a specific test file by giving the direct path to test
+
+# Deploying Go for linux
+
+  1. Set the Linux env variables
+    * GOOS=linux GOARCH=amd64
+  2. Name the build with the release version number 
+    * GOOS=linux GOARCH=amd64 go build -o whir-server-1.0
+
+## Full command all otgether
+  * `GOOS=linux GOARCH=amd64 go build -o whir-server-{VERSION} ./app`
+
+## Transfer to the AWS machine
+  * `scp -i {PATH TO PRIVATE KEY} {PATH TO SERVER BINARY} {PATH TO AWS INSTANCE}`
+    - example: `scp -i ~/Downloads/whirInstance.pem /Users/lucaskern/Desktop/whir-server/whir-server-1.0 ec2-user@ec2-3-137-173-110.us-east-2.compute.amazonaws.com:/home/ec2-user/server`
+
+## Running the server on the instance
+
+  1. SSH into machine
+    - `ssh -i {PATH TO PRIVATE KEY} ec2-user@ec2-3-137-173-110.us-east-2.compute.amazonaws.com`
+  1. Set ENV variables from the .env file
+  1. Run the server in the background of the instance
+    - `nohup ./whir-server-1.0 &`
